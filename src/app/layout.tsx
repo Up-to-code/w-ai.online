@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     description: "منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي. وفر 50% من وقتك وزد مبيعاتك 3x مع ردود تلقائية ذكية وإدارة محادثات موحدة.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/w-ai.b.jpg",
         width: 1200,
         height: 630,
         alt: "w-ai.online - أتمت واتساب للأعمال",
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "w-ai.online - أتمت واتساب للأعمال بالذكاء الاصطناعي",
     description: "منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي. وفر 50% من وقتك وزد مبيعاتك 3x",
-    images: ["/og-image.png"],
+    images: ["/w-ai.b.jpg"],
     creator: "@w-ai-online",
   },
   robots: {
@@ -74,12 +74,14 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
   manifest: "/manifest.json",
@@ -124,7 +126,7 @@ export default function RootLayout({
     "@type": "Organization",
     "name": "w-ai.online",
     "url": "https://w-ai.online",
-    "logo": "https://w-ai.online/icon-512.png",
+    "logo": "https://w-ai.online/android-chrome-512x512.png",
     "description": "منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي",
     "sameAs": [],
   };
@@ -144,6 +146,13 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <head>
+        <meta name="theme-color" content="#1D4F34" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="w-ai.online" />
+        <meta name="format-detection" content="telephone=no" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/site.webmanifest" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

@@ -28,36 +28,7 @@
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/favicon-16x16.png",
-      "sizes": "16x16",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/favicon-32x32.png",
-      "sizes": "32x32",
-      "type": "image/png",
-      "purpose": "any"
     }
   ],
-  "categories": ["business", "productivity", "communication"],
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "المحادثات",
-      "short_name": "Chat",
-      "description": "افتح المحادثات",
-      "url": "/chat",
-      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "لوحة التحكم",
-      "short_name": "Dashboard",
-      "description": "افتح لوحة التحكم",
-      "url": "/dashboard",
-      "icons": [{ "src": "/android-chrome-192x192.png", "sizes": "192x192" }]
-    }
-  ]
+  "categories": ["business", "productivity", "communication"]
 }
