@@ -125,10 +125,10 @@ export const PhoneMockup = memo(function PhoneMockup() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            منصة شاملة لإدارة واتساب للأعمال
+            شاهد كيف يعمل
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            جرب المنصة على جهازك - كل ما تحتاجه في مكان واحد
+            منصة شاملة في راحة يدك
           </p>
         </motion.div>
 

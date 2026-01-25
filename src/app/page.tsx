@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect, lazy, Suspense } from "react"
+import { useState, useEffect, lazy, Suspense, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { motion } from "framer-motion"
+import { motion, useInView, AnimatePresence } from "framer-motion"
 import {
   MessageSquare,
   ArrowRight,
@@ -22,24 +22,9 @@ import {
 } from "@/components/ui/accordion"
 
 // Lazy load components below the fold for better performance
-const LiveStats = lazy(() =>
-  import("@/components/landing/LiveStats").then((mod) => ({
-    default: mod.LiveStats,
-  }))
-)
 const FeatureShowcase = lazy(() =>
   import("@/components/landing/FeatureShowcase").then((mod) => ({
     default: mod.FeatureShowcase,
-  }))
-)
-const AIFeatureHighlight = lazy(() =>
-  import("@/components/landing/AIFeatureHighlight").then((mod) => ({
-    default: mod.AIFeatureHighlight,
-  }))
-)
-const WorldMap = lazy(() =>
-  import("@/components/landing/WorldMap").then((mod) => ({
-    default: mod.WorldMap,
   }))
 )
 const PhoneMockup = lazy(() =>
@@ -47,21 +32,251 @@ const PhoneMockup = lazy(() =>
     default: mod.PhoneMockup,
   }))
 )
-const SocialProof = lazy(() =>
-  import("@/components/landing/SocialProof").then((mod) => ({
-    default: mod.SocialProof,
-  }))
-)
-const ProblemStatement = lazy(() =>
-  import("@/components/landing/ProblemStatement").then((mod) => ({
-    default: mod.ProblemStatement,
-  }))
-)
-const SolutionSection = lazy(() =>
-  import("@/components/landing/SolutionSection").then((mod) => ({
-    default: mod.SolutionSection,
-  }))
-)
+
+// Chat messages data
+const chatMessages = [
+  {
+    id: 1,
+    type: "customer",
+    text: "هل متوفر المنتج X؟",
+    delay: 0.3,
+  },
+  {
+    id: 2,
+    type: "ai",
+    text: "نعم، متوفر حالياً",
+    details: ["السعر: 299 ريال", "المواصفات: شاشة 6.1 بوصة، 128GB"],
+    delay: 0.8,
+  },
+  {
+    id: 3,
+    type: "customer",
+    text: "ما هي الألوان المتوفرة؟",
+    delay: 1.5,
+  },
+  {
+    id: 4,
+    type: "ai",
+    text: "متوفر بألوان:",
+    details: ["• أسود", "• أبيض", "• أنيق"],
+    delay: 2.0,
+  },
+  {
+    id: 5,
+    type: "customer",
+    text: "ممتاز! كيف أطلب؟",
+    delay: 2.7,
+  },
+  {
+    id: 6,
+    type: "ai",
+    text: "يمكنك الطلب مباشرة من خلال الرابط التالي...",
+    delay: 3.2,
+  },
+]
+
+function ChatPhoneMockup() {
+  const chatRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isInView = useInView(containerRef, { once: true, margin: "-100px" })
+  const [visibleMessages, setVisibleMessages] = useState<number[]>([])
+  const [showTyping, setShowTyping] = useState(false)
+
+  // Animate messages appearing one by one
+  useEffect(() => {
+    if (!isInView) return
+
+    const timeouts: NodeJS.Timeout[] = []
+
+    chatMessages.forEach((message, index) => {
+      const timeout = setTimeout(() => {
+        setVisibleMessages((prev) => [...prev, message.id])
+        
+        // Show typing indicator before AI responses
+        if (message.type === "ai" && index < chatMessages.length - 1) {
+          setShowTyping(true)
+          setTimeout(() => {
+            setShowTyping(false)
+          }, 500)
+        }
+      }, message.delay * 1000)
+
+      timeouts.push(timeout)
+    })
+
+    return () => {
+      timeouts.forEach(clearTimeout)
+    }
+  }, [isInView])
+
+  // Auto-scroll to bottom when new messages appear
+  useEffect(() => {
+    if (chatRef.current && visibleMessages.length > 0) {
+      const scrollToBottom = () => {
+        if (chatRef.current) {
+          chatRef.current.scrollTo({
+            top: chatRef.current.scrollHeight,
+            behavior: "smooth",
+          })
+        }
+      }
+      
+      // Small delay to ensure message is rendered
+      const timeout = setTimeout(scrollToBottom, 100)
+      return () => clearTimeout(timeout)
+    }
+  }, [visibleMessages])
+
+  return (
+    <motion.div
+      ref={containerRef}
+      initial={{ opacity: 0, x: -20, scale: 0.95 }}
+      animate={isInView ? { opacity: 1, x: 0, scale: 1 } : { opacity: 0, x: -20, scale: 0.95 }}
+      transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="flex justify-center items-center order-2 lg:order-1"
+    >
+      <motion.div
+        initial={{ scale: 0.95 }}
+        animate={isInView ? { scale: 1 } : { scale: 0.95 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-900 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-2xl"
+        style={{
+          boxShadow: isInView
+            ? "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)"
+            : "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute z-20"></div>
+        <div className="rounded-[2rem] overflow-hidden w-full h-full bg-background relative flex flex-col">
+          {/* WhatsApp Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="bg-primary p-3 pt-10 flex items-center gap-2 text-white"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={isInView ? { scale: 1 } : { scale: 0 }}
+              transition={{ duration: 0.3, delay: 0.2, type: "spring" }}
+              className="w-8 h-8 rounded-full bg-white/20 flex-shrink-0"
+            />
+            <div className="text-sm font-semibold">عميل</div>
+          </motion.div>
+          
+          {/* Chat Messages */}
+          <div
+            ref={chatRef}
+            className="flex-1 p-4 space-y-3 bg-muted/5 overflow-y-auto chat-scrollbar"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(0, 0, 0, 0.2) transparent",
+            }}
+          >
+            <AnimatePresence>
+              {chatMessages.map((message) => {
+                const isVisible = visibleMessages.includes(message.id)
+                const isCustomer = message.type === "customer"
+
+                return (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    animate={
+                      isVisible
+                        ? { opacity: 1, y: 0, scale: 1 }
+                        : { opacity: 0, y: 20, scale: 0.9 }
+                    }
+                    transition={{
+                      duration: 0.4,
+                      ease: [0.25, 0.46, 0.45, 0.94],
+                      delay: isVisible ? 0 : 0,
+                    }}
+                    className={`flex ${isCustomer ? "justify-end" : "justify-start"}`}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.1 }}
+                      whileHover={{ scale: 1.02 }}
+                      className={`rounded-lg p-3 max-w-[80%] shadow-sm ${
+                        isCustomer
+                          ? "bg-primary/20 rounded-br-sm"
+                          : "bg-muted rounded-bl-sm"
+                      }`}
+                    >
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-sm text-foreground mb-2"
+                      >
+                        {message.text}
+                      </motion.p>
+                      {message.details && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 }}
+                          className="space-y-1 text-xs text-muted-foreground"
+                        >
+                          {message.details.map((detail, idx) => (
+                            <motion.div
+                              key={idx}
+                              initial={{ opacity: 0, x: -5 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.4 + idx * 0.1 }}
+                            >
+                              {detail}
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
+
+            {/* Typing Indicator */}
+            <AnimatePresence>
+              {showTyping && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex justify-start"
+                >
+                  <div className="bg-muted rounded-lg rounded-bl-sm p-3">
+                    <div className="flex gap-1.5">
+                      {[0, 1, 2].map((i) => (
+                        <motion.div
+                          key={i}
+                          className="w-2 h-2 bg-primary/60 rounded-full"
+                          animate={{
+                            y: [0, -8, 0],
+                            scale: [1, 1.2, 1],
+                          }}
+                          transition={{
+                            duration: 0.6,
+                            repeat: Infinity,
+                            delay: i * 0.15,
+                            ease: "easeInOut",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
 
 export default function LandingPage() {
   const { isLoading, isAuthenticated } = useUserContext()
@@ -193,122 +408,108 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      {/* Header */}
+      {/* Minimal Header */}
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
-          scrolled ? "bg-background border-b border-border" : "bg-background"
+          scrolled ? "bg-background/95 backdrop-blur-sm border-b border-border" : "bg-background"
         }`}
       >
         <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="text-xl font-bold text-foreground">
             w-ai.online
           </div>
-          <div className="flex gap-3">
-            <Button
-              variant="ghost"
-              onClick={() => router.push("/dashboard")}
-              className="hover:opacity-70 transition-opacity"
-            >
-              تسجيل الدخول
-            </Button>
-            <Button
-              onClick={() => router.push("/dashboard")}
-              className="bg-primary hover:opacity-90 transition-opacity"
-            >
-              ابدأ الآن
-            </Button>
-          </div>
+          <Button
+            onClick={() => router.push("/dashboard")}
+            className="bg-primary hover:opacity-90 transition-opacity"
+          >
+            ابدأ مجاناً
+          </Button>
         </nav>
       </header>
 
-      {/* Hero Section */}
-      <section className="pt-24 pb-16 md:pt-32 md:pb-24 px-4 md:px-6 bg-background">
+      {/* Hero Section - Text Only */}
+      <section className="pt-32 pb-20 md:pt-40 md:pb-32 px-4 md:px-6 bg-background">
         <div className="container mx-auto max-w-4xl">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="text-center space-y-8"
           >
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-foreground leading-tight">
-              أتمت محادثات واتساب للأعمال
-              <br />
-              <span className="text-primary">ووسّع عملك</span>
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-              منصة شاملة لإدارة واتساب للأعمال بالذكاء الاصطناعي. وفر الوقت وزد المبيعات.
-            </p>
-            <div className="pt-4">
+            {/* Headline */}
+            <div className="space-y-6">
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-foreground leading-tight"
+              >
+                توقف عن إضاعة الوقت.
+                <br />
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.4 }}
+                  className="text-primary"
+                >
+                  أتمت واتساب للأعمال الآن
+                </motion.span>
+              </motion.h1>
+              
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+                className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
+              >
+                منصة واحدة تحل كل مشاكلك. وفر الوقت وزد المبيعات. اربط مع متجرك الإلكتروني وأتمت الردود على المنتجات.
+              </motion.p>
+            </div>
+
+            {/* Stats Bar */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="flex items-center justify-center gap-12 pt-8"
+            >
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-foreground">10M+</div>
+                <div className="text-sm text-muted-foreground mt-1">رمز AI</div>
+              </div>
+              <div className="w-px h-12 bg-border"></div>
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-foreground">50%</div>
+                <div className="text-sm text-muted-foreground mt-1">توفير الوقت</div>
+              </div>
+              <div className="w-px h-12 bg-border"></div>
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-foreground">300%</div>
+                <div className="text-sm text-muted-foreground mt-1">زيادة الاستجابة</div>
+              </div>
+            </motion.div>
+
+            {/* CTA Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+              className="pt-8"
+            >
               <Button
                 size="lg"
                 onClick={() => router.push("/dashboard")}
-                className="text-lg px-10 py-7 bg-primary hover:opacity-90 transition-opacity"
+                className="text-lg px-12 py-8 bg-primary hover:opacity-90 transition-opacity shadow-lg hover:shadow-xl"
               >
-                ابدأ مجاناً الآن
+                ابدأ مجاناً
                 <ArrowRight className="mr-2 h-5 w-5" />
               </Button>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Social Proof Section */}
-      <Suspense
-        fallback={
-          <section className="py-16 bg-muted/20">
-            <div className="container mx-auto px-4 md:px-6">
-              <div className="h-16 bg-muted/30 rounded animate-pulse"></div>
-            </div>
-          </section>
-        }
-      >
-        <SocialProof />
-      </Suspense>
-
-      {/* Problem Statement Section */}
-      <Suspense
-        fallback={
-          <section className="py-24 bg-background">
-            <div className="container mx-auto px-4 md:px-6">
-              <div className="text-center mb-16">
-                <div className="h-8 bg-muted rounded w-64 mx-auto mb-4 animate-pulse"></div>
-                <div className="h-6 bg-muted rounded w-96 mx-auto animate-pulse"></div>
-              </div>
-              <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-32 bg-muted/30 rounded-lg animate-pulse"></div>
-                ))}
-              </div>
-            </div>
-          </section>
-        }
-      >
-        <ProblemStatement />
-      </Suspense>
-
-      {/* Solution Section */}
-      <Suspense
-        fallback={
-          <section className="py-24 bg-muted/20">
-            <div className="container mx-auto px-4 md:px-6">
-              <div className="text-center mb-16">
-                <div className="h-8 bg-muted rounded w-48 mx-auto mb-4 animate-pulse"></div>
-                <div className="h-6 bg-muted rounded w-80 mx-auto animate-pulse"></div>
-              </div>
-              <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto mb-12">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-40 bg-muted/30 rounded-lg animate-pulse"></div>
-                ))}
-              </div>
-              <div className="h-12 bg-muted/30 rounded w-48 mx-auto animate-pulse"></div>
-            </div>
-          </section>
-        }
-      >
-        <SolutionSection />
-      </Suspense>
-
-      {/* Phone Mockup Section */}
+      {/* Phone Showcase - See It Work */}
       <Suspense
         fallback={
           <section className="py-32 bg-background">
@@ -327,7 +528,7 @@ export default function LandingPage() {
         <PhoneMockup />
       </Suspense>
 
-      {/* Benefits & Features Section */}
+      {/* Features - What You Get */}
       <Suspense
         fallback={
           <section className="py-20">
@@ -352,70 +553,8 @@ export default function LandingPage() {
         <FeatureShowcase />
       </Suspense>
 
-      {/* CTA After Features */}
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <Button
-              size="lg"
-              onClick={() => router.push("/dashboard")}
-              className="text-lg px-10 py-7 bg-primary hover:opacity-90 transition-opacity"
-            >
-              ابدأ استخدام المميزات الآن
-              <ArrowRight className="mr-2 h-5 w-5" />
-            </Button>
-          </motion.div>
-        </div>
-      </section>
 
-      {/* Live Stats Section */}
-      <Suspense
-        fallback={
-          <section className="py-20 bg-muted/20">
-            <div className="container mx-auto px-4 md:px-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="border border-border rounded-2xl p-6 bg-background animate-pulse"
-                  >
-                    <div className="h-12 w-12 rounded-xl bg-muted mb-4"></div>
-                    <div className="h-4 bg-muted rounded w-24 mb-2"></div>
-                    <div className="h-8 bg-muted rounded w-32"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        }
-      >
-        <LiveStats />
-      </Suspense>
-
-      {/* World Map Section */}
-      <Suspense
-        fallback={
-          <section className="py-32 bg-background">
-            <div className="container mx-auto px-4 md:px-6">
-              <div className="text-center mb-16">
-                <div className="h-8 bg-muted rounded w-64 mx-auto mb-4 animate-pulse"></div>
-                <div className="h-6 bg-muted rounded w-96 mx-auto animate-pulse"></div>
-              </div>
-              <div className="max-w-5xl mx-auto h-96 bg-muted/5 rounded-2xl animate-pulse"></div>
-            </div>
-          </section>
-        }
-      >
-        <WorldMap />
-      </Suspense>
-
-      {/* Testimonials Section */}
+      {/* Testimonials - Success Stories */}
       <section className="py-32 bg-background">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
@@ -468,27 +607,10 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* CTA After Testimonials */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-center mt-12"
-          >
-            <Button
-              size="lg"
-              onClick={() => router.push("/dashboard")}
-              className="text-lg px-10 py-7 bg-primary hover:opacity-90 transition-opacity"
-            >
-              انضم إلى عملائنا السعداء
-              <ArrowRight className="mr-2 h-5 w-5" />
-            </Button>
-          </motion.div>
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Pricing - Choose Your Path */}
       <section className="py-32 bg-background">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
@@ -555,7 +677,7 @@ export default function LandingPage() {
       </section>
 
 
-      {/* FAQ Section */}
+      {/* FAQ - Your Questions */}
       <section className="py-32 bg-background">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
@@ -592,7 +714,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Final CTA - Start Your Journey */}
       <section className="py-32 bg-background">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
