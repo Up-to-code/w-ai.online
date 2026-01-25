@@ -1,28 +1,34 @@
 # Vercel Deployment Setup for W-AI
 
-## Required Environment Variables
+## ⚠️ Required: CONVEX_DEPLOY_KEY
 
-For the build to succeed on Vercel, you need to set up the following environment variable:
+**The build will fail without this environment variable.** The prebuild script will check for it and provide helpful error messages if it's missing.
 
-### CONVEX_DEPLOY_KEY
+### Quick Setup Steps
 
-This is required for `convex codegen` to run during the build process.
+1. **Get your Convex Deploy Key:**
+   - Go to [Convex Dashboard](https://dashboard.convex.dev)
+   - Select your project: `compassionate-owl-382`
+   - Navigate to: **Settings** → **Deploy Keys** → **Production Deploy Keys**
+   - Click **"Generate Deploy Key"**
+   - **Copy the key immediately** (you won't be able to see it again)
 
-**How to set it up:**
-
-1. Go to your [Convex Dashboard](https://dashboard.convex.dev)
-2. Navigate to your project settings
-3. Go to "Production Deploy Keys" section
-4. Generate a new Production deploy key
-5. Copy the deploy key
-6. In Vercel:
-   - Go to your project settings
-   - Navigate to "Environment Variables"
-   - Add a new variable:
+2. **Add to Vercel:**
+   - Go to your Vercel project dashboard
+   - Navigate to: **Settings** → **Environment Variables**
+   - Click **"Add New"**
+   - Fill in:
      - **Name**: `CONVEX_DEPLOY_KEY`
-     - **Value**: (paste the deploy key you copied)
-     - **Environment**: Select "Production" (and optionally Preview/Development if needed)
-   - Save
+     - **Value**: (paste the deploy key from step 1)
+     - **Environment**: 
+       - ✅ **Production** (required)
+       - ✅ **Preview** (recommended)
+       - ✅ **Development** (optional)
+   - Click **"Save"**
+
+3. **Redeploy:**
+   - After adding the variable, trigger a new deployment
+   - The build should now succeed
 
 ### NEXT_PUBLIC_CONVEX_URL
 
