@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useUserMutation } from "@/hooks/useUserMutation"
-import { api } from "../../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { MessageList } from "./MessageList"
 import { ConversationHeader } from "./ConversationHeader"
 import { ChatInput } from "./ChatInput"

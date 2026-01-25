@@ -1,7 +1,7 @@
  "use client"
  
 import { useState } from "react"
-import { api } from "../../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { useUserMutation } from "@/hooks/useUserMutation"
  import { Input } from "@/components/ui/input"
  import { Button } from "@/components/ui/button"

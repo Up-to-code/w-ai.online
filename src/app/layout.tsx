@@ -11,8 +11,87 @@ const tajawal = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "chatcb-UI - إدارة واتساب للأعمال",
-  description: "لوحة تحكم شاملة لإدارة واجهة برمجة تطبيقات واتساب للأعمال",
+  metadataBase: new URL("https://w-ai.online"),
+  title: {
+    template: "%s - w-ai.online",
+    default: "w-ai.online - أتمت واتساب للأعمال بالذكاء الاصطناعي",
+  },
+  description: "منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي. وفر 50% من وقتك وزد مبيعاتك 3x مع ردود تلقائية ذكية وإدارة محادثات موحدة.",
+  keywords: [
+    "واتساب للأعمال",
+    "WhatsApp Business",
+    "أتمتة واتساب",
+    "ذكاء اصطناعي",
+    "AI",
+    "chatbot",
+    "إدارة محادثات",
+    "حملات تسويقية",
+    "واتساب API",
+    "Meta Business",
+    "automation",
+    "customer service",
+    "w-ai",
+    "w-ai.online"
+  ],
+  authors: [{ name: "w-ai.online" }],
+  creator: "w-ai.online",
+  publisher: "w-ai.online",
+  applicationName: "w-ai.online",
+  referrer: "origin-when-cross-origin",
+  openGraph: {
+    type: "website",
+    locale: "ar_SA",
+    url: "https://w-ai.online",
+    siteName: "w-ai.online",
+    title: "w-ai.online - أتمت واتساب للأعمال بالذكاء الاصطناعي",
+    description: "منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي. وفر 50% من وقتك وزد مبيعاتك 3x مع ردود تلقائية ذكية وإدارة محادثات موحدة.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "w-ai.online - أتمت واتساب للأعمال",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "w-ai.online - أتمت واتساب للأعمال بالذكاء الاصطناعي",
+    description: "منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي. وفر 50% من وقتك وزد مبيعاتك 3x",
+    images: ["/og-image.png"],
+    creator: "@w-ai-online",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  manifest: "/manifest.json",
+  alternates: {
+    canonical: "https://w-ai.online",
+    languages: {
+      "ar-SA": "https://w-ai.online",
+      "en-US": "https://w-ai.online",
+    },
+  },
+  category: "business",
+  classification: "Business Automation Software",
 };
 
 export default function RootLayout({
@@ -20,8 +99,64 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "w-ai.online",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "ratingCount": "1000",
+    },
+    "description": "منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي",
+    "url": "https://w-ai.online",
+  };
+
+  const organizationData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "w-ai.online",
+    "url": "https://w-ai.online",
+    "logo": "https://w-ai.online/icon-512.png",
+    "description": "منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي",
+    "sameAs": [],
+  };
+
+  const websiteData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "w-ai.online",
+    "url": "https://w-ai.online",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://w-ai.online/search?q={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <html lang="ar" dir="rtl">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteData) }}
+        />
+      </head>
       <body
         className={`${tajawal.className} antialiased font-sans`}
       >

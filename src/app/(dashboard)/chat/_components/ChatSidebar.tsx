@@ -1,7 +1,7 @@
 "use client"
 
 import { useUserQuery } from "@/hooks/useUserQuery"
-import { api } from "../../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { avatarColorFromString, cn, initialsFromName } from "@/lib/utils"

@@ -28,38 +28,38 @@ interface FeatureWithStat extends Feature {
 const features: FeatureWithStat[] = [
   {
     icon: Bot,
-    title: "ذكاء اصطناعي",
-    description: "ردود تلقائية ذكية على جميع الرسائل",
+    title: "ذكاء اصطناعي متقدم",
+    description: "ردود ذكية تزيد المبيعات بنسبة 300% وتوفر 20 ساعة أسبوعياً",
     stat: "10M+ رمز",
   },
   {
     icon: MessageSquare,
-    title: "إدارة المحادثات",
-    description: "اربط وأدار جميع المحادثات من مكان واحد",
+    title: "إدارة محادثات موحدة",
+    description: "اربط جميع حساباتك وزد الاستجابة 3x مع إدارة مركزية",
     stat: "300% زيادة",
   },
   {
     icon: Zap,
     title: "أتمتة كاملة",
-    description: "وفر الوقت مع أتمتة كاملة للعمليات",
+    description: "وفر 50% من وقتك وزد الإنتاجية مع أتمتة ذكية 24/7",
     stat: "50% توفير",
   },
   {
     icon: BarChart3,
-    title: "تحليلات متقدمة",
-    description: "تتبع أداءك في الوقت الفعلي",
+    title: "تحليلات في الوقت الفعلي",
+    description: "راقب أداءك واتخذ قرارات ذكية تزيد أرباحك",
     stat: "بيانات مباشرة",
   },
   {
     icon: Workflow,
-    title: "حملات ذكية",
-    description: "أنشئ حملات فعالة بسهولة",
+    title: "حملات تسويقية ذكية",
+    description: "أنشئ حملات فعالة تزيد المبيعات بنسبة 40%",
     stat: "نتائج فورية",
   },
   {
     icon: Shield,
-    title: "آمن ومحمي",
-    description: "بياناتك محمية ومشفرة",
+    title: "أمان كامل",
+    description: "بياناتك محمية 100% مع تشفير متقدم",
     stat: "100% آمن",
   },
 ]
@@ -78,10 +78,10 @@ export const FeatureShowcase = memo(function FeatureShowcase() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            كل ما تحتاجه في مكان واحد
+            مميزات تزيد أرباحك
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            منصة شاملة لإدارة واتساب للأعمال
+            كل ما تحتاجه لزيادة مبيعاتك 3x وتوفير 50% من وقتك
           </p>
         </motion.div>
 
@@ -89,26 +89,26 @@ export const FeatureShowcase = memo(function FeatureShowcase() {
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto"
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-12 max-w-5xl mx-auto"
         >
           {features.map((feature, index) => {
             const Icon = feature.icon
             return (
-              <div key={index} className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <Icon className="h-5 w-5" />
+              <div key={index} className="space-y-3 text-center">
+                <div className="flex justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <Icon className="h-6 w-6" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-semibold text-foreground">
-                      {feature.title}
-                    </h3>
-                    {feature.stat && (
-                      <div className="text-xs text-primary font-medium mt-0.5">
-                        {feature.stat}
-                      </div>
-                    )}
-                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-1">
+                    {feature.title}
+                  </h3>
+                  {feature.stat && (
+                    <div className="text-sm text-primary font-semibold mb-2">
+                      {feature.stat}
+                    </div>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {feature.description}

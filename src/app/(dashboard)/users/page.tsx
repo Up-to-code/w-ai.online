@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,7 +16,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Users, Edit2, Save, X } from "lucide-react"
 import { toast } from "sonner"
-import { Id } from "../../../../convex/_generated/dataModel"
+import { Id } from "@convex/_generated/dataModel"
 
 type UserRole = "admin" | "agent" | "user"
 

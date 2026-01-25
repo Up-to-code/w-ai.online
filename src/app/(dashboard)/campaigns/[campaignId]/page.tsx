@@ -2,8 +2,8 @@
 
 import { useParams, useRouter } from "next/navigation"
 import { useUserQuery } from "@/hooks/useUserQuery"
-import { api } from "../../../../../convex/_generated/api"
-import { Id } from "../../../../../convex/_generated/dataModel"
+import { api } from "@convex/_generated/api"
+import { Id } from "@convex/_generated/dataModel"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

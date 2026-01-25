@@ -1,7 +1,7 @@
 "use client"
 
 import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
-import { api } from "../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -29,7 +29,7 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameDay, isSameMonth } from "date-fns"
 import { ar } from "date-fns/locale"
-import type { Id } from "../../../../convex/_generated/dataModel"
+import type { Id } from "@convex/_generated/dataModel"
 import {
   DropdownMenu,
   DropdownMenuContent,

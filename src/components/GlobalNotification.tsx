@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { useSearchParams, usePathname, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"

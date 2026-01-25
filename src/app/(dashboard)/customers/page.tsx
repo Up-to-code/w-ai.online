@@ -2,7 +2,7 @@
  
  import { useMemo, useState } from "react"
  import { useUserQuery } from "@/hooks/useUserQuery"
- import { api } from "../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
  import { Users } from "lucide-react"
  import { CustomersHeader } from "./_components/CustomersHeader"

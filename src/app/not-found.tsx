@@ -68,10 +68,10 @@ export default function NotFound() {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <MessageSquare className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold text-foreground">ChatCB</span>
+            <span className="text-lg font-semibold text-foreground">w-ai.online</span>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            لوحة تحكم إدارة واتساب للأعمال
+            أتمت واتساب للأعمال بالذكاء الاصطناعي
           </p>
         </div>
       </div>

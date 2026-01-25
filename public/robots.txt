@@ -1,0 +1,15 @@
+# robots.txt for w-ai.online
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /callback/
+Disallow: /dashboard/*/payment
+Disallow: /_next/
+Disallow: /static/
+
+# Sitemap
+Sitemap: https://w-ai.online/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1

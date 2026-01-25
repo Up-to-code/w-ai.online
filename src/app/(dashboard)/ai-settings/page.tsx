@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
 import { useAction } from "convex/react"
-import { api } from "../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"

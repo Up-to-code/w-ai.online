@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
-import { api } from "../../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { avatarColorFromString, initialsFromName } from "@/lib/utils"
 import { Button } from "@/components/ui/button"

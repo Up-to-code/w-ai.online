@@ -21,7 +21,7 @@ import {
 import { useUserContext } from "@/hooks/useUserContext"
 import { useOrganizationContext } from "@/hooks/useOrganizationContext"
 import { useQuery } from "convex/react"
-import { api } from "../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { TimeFilter, type TimeFilterValue } from "@/components/dashboard/TimeFilter"
 import { MessagesChart } from "@/components/dashboard/MessagesChart"
 import { DeliveryRateChart } from "@/components/dashboard/DeliveryRateChart"

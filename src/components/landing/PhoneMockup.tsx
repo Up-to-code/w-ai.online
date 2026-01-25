@@ -17,20 +17,25 @@ const screens = [
           <div className="bg-primary/10 rounded-lg p-3">
             <div className="text-xs text-muted-foreground mb-1">الرسائل</div>
             <div className="text-lg font-bold text-foreground">12.5K</div>
+            <div className="text-xs text-primary mt-1">↑ 23%</div>
           </div>
           <div className="bg-primary/10 rounded-lg p-3">
             <div className="text-xs text-muted-foreground mb-1">الحملات</div>
             <div className="text-lg font-bold text-foreground">48</div>
+            <div className="text-xs text-primary mt-1">نشطة</div>
           </div>
         </div>
-        <div className="h-32 bg-muted/30 rounded-lg flex items-end gap-1 p-2">
-          {[65, 80, 45, 90, 70, 85].map((height, i) => (
-            <div
-              key={i}
-              className="flex-1 bg-primary rounded-t"
-              style={{ height: `${height}%` }}
-            />
-          ))}
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-foreground">الأداء الأسبوعي</div>
+          <div className="h-24 bg-muted/30 rounded-lg flex items-end gap-1 p-2">
+            {[65, 80, 45, 90, 70, 85, 75].map((height, i) => (
+              <div
+                key={i}
+                className="flex-1 bg-primary rounded-t transition-all"
+                style={{ height: `${height}%` }}
+              />
+            ))}
+          </div>
         </div>
       </div>
     ),
@@ -44,28 +49,31 @@ const screens = [
         <div className="flex gap-2 items-start">
           <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="bg-muted rounded-lg p-2">
-              <div className="h-2 bg-foreground/20 rounded w-3/4 mb-1" />
+            <div className="bg-muted rounded-lg p-2.5">
+              <div className="h-2 bg-foreground/20 rounded w-3/4 mb-1.5" />
               <div className="h-2 bg-foreground/20 rounded w-1/2" />
             </div>
+            <div className="text-xs text-muted-foreground">10:30 ص</div>
           </div>
         </div>
         <div className="flex gap-2 items-start justify-end">
           <div className="flex-1 space-y-2">
-            <div className="bg-primary rounded-lg p-2 ml-auto max-w-[80%]">
-              <div className="h-2 bg-white/80 rounded w-full mb-1" />
-              <div className="h-2 bg-white/80 rounded w-2/3" />
+            <div className="bg-primary rounded-lg p-2.5 ml-auto max-w-[80%]">
+              <div className="h-2 bg-white/90 rounded w-full mb-1.5" />
+              <div className="h-2 bg-white/90 rounded w-2/3" />
             </div>
+            <div className="text-xs text-muted-foreground text-left">10:31 ص</div>
           </div>
           <div className="w-8 h-8 rounded-full bg-primary flex-shrink-0" />
         </div>
         <div className="flex gap-2 items-start">
           <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="bg-muted rounded-lg p-2">
-              <div className="h-2 bg-foreground/20 rounded w-2/3 mb-1" />
+            <div className="bg-muted rounded-lg p-2.5">
+              <div className="h-2 bg-foreground/20 rounded w-2/3 mb-1.5" />
               <div className="h-2 bg-foreground/20 rounded w-1/2" />
             </div>
+            <div className="text-xs text-muted-foreground">10:32 ص</div>
           </div>
         </div>
       </div>
@@ -77,18 +85,27 @@ const screens = [
     icon: Zap,
     content: (
       <div className="space-y-3 p-4">
-        <div className="bg-muted/30 rounded-lg p-3">
-          <div className="h-3 bg-foreground/20 rounded w-24 mb-2" />
+        <div className="bg-muted/30 rounded-lg p-3 border-r-4 border-primary">
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-3 bg-foreground/30 rounded w-24" />
+            <div className="h-2 bg-primary/50 rounded w-12" />
+          </div>
           <div className="h-2 bg-foreground/10 rounded w-full mb-1" />
           <div className="h-2 bg-foreground/10 rounded w-3/4" />
         </div>
-        <div className="bg-muted/30 rounded-lg p-3">
-          <div className="h-3 bg-foreground/20 rounded w-28 mb-2" />
+        <div className="bg-muted/30 rounded-lg p-3 border-r-4 border-primary">
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-3 bg-foreground/30 rounded w-28" />
+            <div className="h-2 bg-primary/50 rounded w-16" />
+          </div>
           <div className="h-2 bg-foreground/10 rounded w-full mb-1" />
           <div className="h-2 bg-foreground/10 rounded w-2/3" />
         </div>
-        <div className="bg-muted/30 rounded-lg p-3">
-          <div className="h-3 bg-foreground/20 rounded w-20 mb-2" />
+        <div className="bg-muted/30 rounded-lg p-3 border-r-4 border-primary">
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-3 bg-foreground/30 rounded w-20" />
+            <div className="h-2 bg-primary/50 rounded w-10" />
+          </div>
           <div className="h-2 bg-foreground/10 rounded w-full mb-1" />
           <div className="h-2 bg-foreground/10 rounded w-4/5" />
         </div>

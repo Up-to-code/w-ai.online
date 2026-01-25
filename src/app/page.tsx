@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect, lazy, Suspense, useRef } from "react"
+import { useState, useEffect, lazy, Suspense } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useQuery } from "convex/react"
+import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
-import { motion, useInView, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import {
   MessageSquare,
   ArrowRight,
@@ -12,6 +13,10 @@ import {
   CheckCircle2,
   TrendingUp,
   Zap,
+  ShoppingBag,
+  Link2,
+  Bot,
+  BarChart3,
 } from "lucide-react"
 import { useUserContext } from "@/hooks/useUserContext"
 import {
@@ -20,6 +25,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { AnimatedCounter } from "@/components/landing/AnimatedCounter"
 
 // Lazy load components below the fold for better performance
 const FeatureShowcase = lazy(() =>
@@ -33,248 +39,61 @@ const PhoneMockup = lazy(() =>
   }))
 )
 
-// Chat messages data
-const chatMessages = [
-  {
-    id: 1,
-    type: "customer",
-    text: "هل متوفر المنتج X؟",
-    delay: 0.3,
-  },
-  {
-    id: 2,
-    type: "ai",
-    text: "نعم، متوفر حالياً",
-    details: ["السعر: 299 ريال", "المواصفات: شاشة 6.1 بوصة، 128GB"],
-    delay: 0.8,
-  },
-  {
-    id: 3,
-    type: "customer",
-    text: "ما هي الألوان المتوفرة؟",
-    delay: 1.5,
-  },
-  {
-    id: 4,
-    type: "ai",
-    text: "متوفر بألوان:",
-    details: ["• أسود", "• أبيض", "• أنيق"],
-    delay: 2.0,
-  },
-  {
-    id: 5,
-    type: "customer",
-    text: "ممتاز! كيف أطلب؟",
-    delay: 2.7,
-  },
-  {
-    id: 6,
-    type: "ai",
-    text: "يمكنك الطلب مباشرة من خلال الرابط التالي...",
-    delay: 3.2,
-  },
-]
-
-function ChatPhoneMockup() {
-  const chatRef = useRef<HTMLDivElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const isInView = useInView(containerRef, { once: true, margin: "-100px" })
-  const [visibleMessages, setVisibleMessages] = useState<number[]>([])
-  const [showTyping, setShowTyping] = useState(false)
-
-  // Animate messages appearing one by one
-  useEffect(() => {
-    if (!isInView) return
-
-    const timeouts: NodeJS.Timeout[] = []
-
-    chatMessages.forEach((message, index) => {
-      const timeout = setTimeout(() => {
-        setVisibleMessages((prev) => [...prev, message.id])
-        
-        // Show typing indicator before AI responses
-        if (message.type === "ai" && index < chatMessages.length - 1) {
-          setShowTyping(true)
-          setTimeout(() => {
-            setShowTyping(false)
-          }, 500)
-        }
-      }, message.delay * 1000)
-
-      timeouts.push(timeout)
-    })
-
-    return () => {
-      timeouts.forEach(clearTimeout)
+// Number formatting utility
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    const millions = num / 1000000
+    if (millions >= 10) {
+      return `${Math.floor(millions)}M+`
     }
-  }, [isInView])
-
-  // Auto-scroll to bottom when new messages appear
-  useEffect(() => {
-    if (chatRef.current && visibleMessages.length > 0) {
-      const scrollToBottom = () => {
-        if (chatRef.current) {
-          chatRef.current.scrollTo({
-            top: chatRef.current.scrollHeight,
-            behavior: "smooth",
-          })
-        }
-      }
-      
-      // Small delay to ensure message is rendered
-      const timeout = setTimeout(scrollToBottom, 100)
-      return () => clearTimeout(timeout)
+    return `${millions.toFixed(1)}M+`
+  }
+  if (num >= 1000) {
+    const thousands = num / 1000
+    if (thousands >= 10) {
+      return `${Math.floor(thousands)}K+`
     }
-  }, [visibleMessages])
+    return `${thousands.toFixed(1)}K+`
+  }
+  return num.toString()
+}
 
+// Animated number with K/M formatting
+function AnimatedFormattedNumber({ value, duration = 2000, className = "" }: { value: number; duration?: number; className?: string }) {
+  if (!value && value !== 0) return <span className={className}>--</span>
+  
+  if (value >= 1000000) {
+    const millions = value / 1000000
+    const displayValue = millions >= 10 ? Math.floor(millions) : parseFloat(millions.toFixed(1))
+    return (
+      <AnimatedCounter
+        value={displayValue}
+        duration={duration}
+        className={className}
+        decimals={millions >= 10 ? 0 : 1}
+        suffix="M+"
+      />
+    )
+  }
+  if (value >= 1000) {
+    const thousands = value / 1000
+    const displayValue = thousands >= 10 ? Math.floor(thousands) : parseFloat(thousands.toFixed(1))
+    return (
+      <AnimatedCounter
+        value={displayValue}
+        duration={duration}
+        className={className}
+        decimals={thousands >= 10 ? 0 : 1}
+        suffix="K+"
+      />
+    )
+  }
   return (
-    <motion.div
-      ref={containerRef}
-      initial={{ opacity: 0, x: -20, scale: 0.95 }}
-      animate={isInView ? { opacity: 1, x: 0, scale: 1 } : { opacity: 0, x: -20, scale: 0.95 }}
-      transition={{ duration: 0.6, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="flex justify-center items-center order-2 lg:order-1"
-    >
-      <motion.div
-        initial={{ scale: 0.95 }}
-        animate={isInView ? { scale: 1 } : { scale: 0.95 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-900 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-2xl"
-        style={{
-          boxShadow: isInView
-            ? "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)"
-            : "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-        }}
-      >
-        <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute z-20"></div>
-        <div className="rounded-[2rem] overflow-hidden w-full h-full bg-background relative flex flex-col">
-          {/* WhatsApp Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="bg-primary p-3 pt-10 flex items-center gap-2 text-white"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={isInView ? { scale: 1 } : { scale: 0 }}
-              transition={{ duration: 0.3, delay: 0.2, type: "spring" }}
-              className="w-8 h-8 rounded-full bg-white/20 flex-shrink-0"
-            />
-            <div className="text-sm font-semibold">عميل</div>
-          </motion.div>
-          
-          {/* Chat Messages */}
-          <div
-            ref={chatRef}
-            className="flex-1 p-4 space-y-3 bg-muted/5 overflow-y-auto chat-scrollbar"
-            style={{
-              scrollbarWidth: "thin",
-              scrollbarColor: "rgba(0, 0, 0, 0.2) transparent",
-            }}
-          >
-            <AnimatePresence>
-              {chatMessages.map((message) => {
-                const isVisible = visibleMessages.includes(message.id)
-                const isCustomer = message.type === "customer"
-
-                return (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                    animate={
-                      isVisible
-                        ? { opacity: 1, y: 0, scale: 1 }
-                        : { opacity: 0, y: 20, scale: 0.9 }
-                    }
-                    transition={{
-                      duration: 0.4,
-                      ease: [0.25, 0.46, 0.45, 0.94],
-                      delay: isVisible ? 0 : 0,
-                    }}
-                    className={`flex ${isCustomer ? "justify-end" : "justify-start"}`}
-                  >
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                      whileHover={{ scale: 1.02 }}
-                      className={`rounded-lg p-3 max-w-[80%] shadow-sm ${
-                        isCustomer
-                          ? "bg-primary/20 rounded-br-sm"
-                          : "bg-muted rounded-bl-sm"
-                      }`}
-                    >
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-sm text-foreground mb-2"
-                      >
-                        {message.text}
-                      </motion.p>
-                      {message.details && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.3 }}
-                          className="space-y-1 text-xs text-muted-foreground"
-                        >
-                          {message.details.map((detail, idx) => (
-                            <motion.div
-                              key={idx}
-                              initial={{ opacity: 0, x: -5 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.4 + idx * 0.1 }}
-                            >
-                              {detail}
-                            </motion.div>
-                          ))}
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  </motion.div>
-                )
-              })}
-            </AnimatePresence>
-
-            {/* Typing Indicator */}
-            <AnimatePresence>
-              {showTyping && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex justify-start"
-                >
-                  <div className="bg-muted rounded-lg rounded-bl-sm p-3">
-                    <div className="flex gap-1.5">
-                      {[0, 1, 2].map((i) => (
-                        <motion.div
-                          key={i}
-                          className="w-2 h-2 bg-primary/60 rounded-full"
-                          animate={{
-                            y: [0, -8, 0],
-                            scale: [1, 1.2, 1],
-                          }}
-                          transition={{
-                            duration: 0.6,
-                            repeat: Infinity,
-                            delay: i * 0.15,
-                            ease: "easeInOut",
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
+    <AnimatedCounter
+      value={value}
+      duration={duration}
+      className={className}
+    />
   )
 }
 
@@ -282,6 +101,9 @@ export default function LandingPage() {
   const { isLoading, isAuthenticated } = useUserContext()
   const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
+  
+  // Fetch public stats
+  const publicStats = useQuery(api.publicStats.getPublicStats)
 
   // Redirect authenticated users to dashboard
   useEffect(() => {
@@ -368,41 +190,52 @@ export default function LandingPage() {
 
   const faqs = [
     {
-      question: "كيف يمكنني ربط حساب واتساب للأعمال؟",
-      answer: "يمكنك ربط حساب واتساب للأعمال من خلال صفحة التكاملات. سنرشدك خلال عملية OAuth.",
+      question: "هل هناك نسخة تجريبية مجانية؟",
+      answer: "نعم، يمكنك البدء مجاناً بدون بطاقة ائتمان. جرب جميع المميزات لمدة 14 يوماً.",
+    },
+    {
+      question: "كم من الوقت أحتاج للبدء؟",
+      answer: "يمكنك البدء في أقل من 5 دقائق. ربط حساب واتساب للأعمال سهل جداً.",
+    },
+    {
+      question: "هل يمكنني إلغاء الاشتراك في أي وقت؟",
+      answer: "نعم، يمكنك إلغاء الاشتراك في أي وقت بدون رسوم إضافية.",
     },
     {
       question: "ما هي طرق الدفع المقبولة؟",
       answer: "نقبل جميع بطاقات الائتمان الرئيسية وندعم المدفوعات بالريال السعودي.",
     },
     {
-      question: "هل يمكنني إلغاء الاشتراك في أي وقت؟",
-      answer: "نعم، يمكنك إلغاء الاشتراك في أي وقت من صفحة الإعدادات.",
+      question: "هل بياناتي آمنة؟",
+      answer: "نعم، نستخدم تشفير SSL ونتابع أعلى معايير الأمان لحماية بياناتك.",
     },
     {
-      question: "هل هناك نسخة تجريبية مجانية؟",
-      answer: "نعم، نقدم نسخة تجريبية مجانية لمدة 14 يوماً لجميع المستخدمين الجدد.",
+      question: "كيف يمكنني الحصول على الدعم؟",
+      answer: "نوفر دعم فني على مدار الساعة عبر البريد الإلكتروني والدردشة المباشرة.",
     },
   ]
 
   const testimonials = [
     {
-      text: "لقد غيرت هذه المنصة طريقة تعاملنا مع خدمة العملاء. وكيل الذكاء الاصطناعي يفهم السياق بشكل مثالي وزمن الاستجابة لدينا تحسن بشكل كبير.",
+      text: "زادت مبيعاتنا بنسبة 40% بعد استخدام المنصة. الردود التلقائية ساعدتنا على استقبال طلبات أكثر بكثير.",
       author: "أحمد محمد",
       company: "متجر إلكتروني",
       rating: 5,
+      result: "40% زيادة في المبيعات",
     },
     {
-      text: "أفضل استثمار قمنا به هذا العام. الحملات التلقائية ووكيل الذكاء الاصطناعي وفرا لنا ساعات من العمل اليومي.",
+      text: "وفرنا 20 ساعة أسبوعياً. الأتمتة الذكية تعمل لنا 24/7 بدون توقف.",
       author: "فاطمة علي",
       company: "شركة تجارية",
       rating: 5,
+      result: "20 ساعة توفير أسبوعياً",
     },
     {
-      text: "منصة احترافية وسهلة الاستخدام. فريق الدعم سريع الاستجابة والمنصة مستقرة تماماً.",
+      text: "زمن الاستجابة انخفض من 5 دقائق إلى 30 ثانية. عملاؤنا سعداء جداً.",
       author: "خالد سعيد",
       company: "مؤسسة",
       rating: 5,
+      result: "30 ثانية وقت رد",
     },
   ]
 
@@ -422,70 +255,106 @@ export default function LandingPage() {
             onClick={() => router.push("/dashboard")}
             className="bg-primary hover:opacity-90 transition-opacity"
           >
-            ابدأ مجاناً
+            ابدأ مجاناً الآن
           </Button>
         </nav>
       </header>
 
-      {/* Hero Section - Text Only */}
-      <section className="pt-32 pb-20 md:pt-40 md:pb-32 px-4 md:px-6 bg-background">
-        <div className="container mx-auto max-w-4xl">
+      {/* Hero Section - Sales-Focused */}
+      <section className="pt-32 pb-16 md:pt-40 md:pb-24 px-4 md:px-6 bg-background">
+        <div className="container mx-auto max-w-5xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="text-center space-y-8"
+            transition={{ duration: 0.6 }}
+            className="text-center space-y-10"
           >
+            {/* Trust Signal */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-sm text-muted-foreground"
+            >
+              {publicStats ? (
+                <>موثوق به من قبل أكثر من {formatNumber(publicStats.activeOrganizations || publicStats.totalOrganizations)} شركة</>
+              ) : (
+                <>موثوق به من قبل آلاف الشركات</>
+              )}
+            </motion.p>
+
             {/* Headline */}
             <div className="space-y-6">
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
                 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-foreground leading-tight"
               >
-                توقف عن إضاعة الوقت.
+                نمّي عملك. زد مبيعاتك.
                 <br />
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                  className="text-primary"
-                >
-                  أتمت واتساب للأعمال الآن
-                </motion.span>
+                <span className="text-primary">واتساب يرد. سلة تربط. كل شيء يعمل.</span>
               </motion.h1>
               
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.5 }}
-                className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed"
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
               >
-                منصة واحدة تحل كل مشاكلك. وفر الوقت وزد المبيعات. اربط مع متجرك الإلكتروني وأتمت الردود على المنتجات.
+                واتساب يرد على العملاء تلقائياً. سلة تربط منتجاتك. المحادثات تدير نفسها. المبيعات تزيد وحدها.
               </motion.p>
             </div>
 
-            {/* Stats Bar */}
+            {/* Prominent Stats Bar */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
-              className="flex items-center justify-center gap-12 pt-8"
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="flex flex-wrap items-center justify-center gap-8 md:gap-16 pt-6"
             >
               <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-foreground">10M+</div>
-                <div className="text-sm text-muted-foreground mt-1">رمز AI</div>
+                {publicStats ? (
+                  <>
+                    <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground">
+                      <AnimatedFormattedNumber
+                        value={publicStats.totalMessages}
+                        duration={2000}
+                      />
+                    </div>
+                    <div className="text-sm md:text-base text-muted-foreground mt-2">رسالة مرسلة</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground animate-pulse">--</div>
+                    <div className="text-sm md:text-base text-muted-foreground mt-2">رسالة مرسلة</div>
+                  </>
+                )}
               </div>
-              <div className="w-px h-12 bg-border"></div>
+              <div className="w-px h-16 bg-border hidden md:block"></div>
               <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-foreground">50%</div>
-                <div className="text-sm text-muted-foreground mt-1">توفير الوقت</div>
+                <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground">50%</div>
+                <div className="text-sm md:text-base text-muted-foreground mt-2">توفير الوقت</div>
               </div>
-              <div className="w-px h-12 bg-border"></div>
+              <div className="w-px h-16 bg-border hidden md:block"></div>
               <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-foreground">300%</div>
-                <div className="text-sm text-muted-foreground mt-1">زيادة الاستجابة</div>
+                {publicStats ? (
+                  <>
+                    <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground">
+                      <AnimatedCounter
+                        value={publicStats.averageDeliveryRate}
+                        duration={2000}
+                        suffix="%"
+                      />
+                    </div>
+                    <div className="text-sm md:text-base text-muted-foreground mt-2">معدل التسليم</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground animate-pulse">--</div>
+                    <div className="text-sm md:text-base text-muted-foreground mt-2">معدل التسليم</div>
+                  </>
+                )}
               </div>
             </motion.div>
 
@@ -493,15 +362,15 @@ export default function LandingPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.7 }}
-              className="pt-8"
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="pt-6"
             >
               <Button
                 size="lg"
                 onClick={() => router.push("/dashboard")}
                 className="text-lg px-12 py-8 bg-primary hover:opacity-90 transition-opacity shadow-lg hover:shadow-xl"
               >
-                ابدأ مجاناً
+                ابدأ مجاناً الآن - وفر 50% من وقتك
                 <ArrowRight className="mr-2 h-5 w-5" />
               </Button>
             </motion.div>
@@ -509,24 +378,132 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Phone Showcase - See It Work */}
-      <Suspense
-        fallback={
-          <section className="py-32 bg-background">
-            <div className="container mx-auto px-4 md:px-6">
-              <div className="text-center mb-16">
-                <div className="h-8 bg-muted rounded w-64 mx-auto mb-4 animate-pulse"></div>
-                <div className="h-6 bg-muted rounded w-96 mx-auto animate-pulse"></div>
-              </div>
-              <div className="flex justify-center">
-                <div className="h-[600px] w-[300px] bg-muted/5 rounded-[2.5rem] animate-pulse"></div>
+      {/* Social Proof Section */}
+      <section className="py-16 md:py-24 bg-muted/30">
+        <div className="container mx-auto px-4 md:px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6 }}
+            className="text-center space-y-8"
+          >
+            <div>
+              <h3 className="text-lg md:text-xl text-muted-foreground mb-6">
+                موثوق به من قبل آلاف الشركات
+              </h3>
+              <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
+                <div className="text-center">
+                  {publicStats ? (
+                    <>
+                      <div className="text-4xl md:text-5xl font-bold text-foreground">
+                        <AnimatedFormattedNumber
+                          value={publicStats.activeOrganizations || publicStats.totalOrganizations}
+                          duration={2000}
+                        />
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">شركة</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-4xl md:text-5xl font-bold text-foreground animate-pulse">--</div>
+                      <div className="text-sm text-muted-foreground mt-1">شركة</div>
+                    </>
+                  )}
+                </div>
+                <div className="w-px h-12 bg-border"></div>
+                <div className="text-center">
+                  {publicStats ? (
+                    <>
+                      <div className="text-4xl md:text-5xl font-bold text-foreground">
+                        <AnimatedFormattedNumber
+                          value={publicStats.totalMessages}
+                          duration={2000}
+                        />
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">رسالة مرسلة</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-4xl md:text-5xl font-bold text-foreground animate-pulse">--</div>
+                      <div className="text-sm text-muted-foreground mt-1">رسالة مرسلة</div>
+                    </>
+                  )}
+                </div>
+                <div className="w-px h-12 bg-border"></div>
+                <div className="text-center">
+                  {publicStats ? (
+                    <>
+                      <div className="text-4xl md:text-5xl font-bold text-foreground">
+                        <AnimatedCounter
+                          value={publicStats.averageDeliveryRate}
+                          duration={2000}
+                          suffix="%"
+                        />
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">معدل التسليم</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-4xl md:text-5xl font-bold text-foreground animate-pulse">--</div>
+                      <div className="text-sm text-muted-foreground mt-1">معدل التسليم</div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </section>
-        }
-      >
-        <PhoneMockup />
-      </Suspense>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Integration Icons Section */}
+      <section className="py-24 md:py-32 bg-background">
+        <div className="container mx-auto px-4 md:px-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              اربط منصاتك المفضلة
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              تكامل سهل مع أكبر المنصات
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto"
+          >
+            <div className="text-center p-6 rounded-xl bg-muted/30">
+              <div className="w-16 h-16 rounded-xl bg-[#004D3D] flex items-center justify-center mx-auto mb-4">
+                <ShoppingBag className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">سلة</h3>
+              <p className="text-sm text-muted-foreground">اربط متجرك الإلكتروني</p>
+            </div>
+            <div className="text-center p-6 rounded-xl bg-muted/30">
+              <div className="w-16 h-16 rounded-xl bg-[#128C7E] flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">واتساب</h3>
+              <p className="text-sm text-muted-foreground">واتساب للأعمال</p>
+            </div>
+            <div className="text-center p-6 rounded-xl bg-muted/30">
+              <div className="w-16 h-16 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
+                <Link2 className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">تكاملات أخرى</h3>
+              <p className="text-sm text-muted-foreground">اربط منصاتك بسهولة</p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Features - What You Get */}
       <Suspense
@@ -553,26 +530,214 @@ export default function LandingPage() {
         <FeatureShowcase />
       </Suspense>
 
-
-      {/* Testimonials - Success Stories */}
-      <section className="py-32 bg-background">
+      {/* How It Works Section */}
+      <section className="py-24 md:py-32 bg-background">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-16"
+            className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              ماذا يقول عملاؤنا
+              كيف يعمل
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              آلاف الشركات تثق بنا
+              ابدأ في 4 خطوات بسيطة
             </p>
           </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto"
+          >
+            {[
+              {
+                number: 1,
+                title: "اربط حسابك",
+                description: "اتصل بواتساب للأعمال في دقائق",
+                icon: Link2,
+              },
+              {
+                number: 2,
+                title: "أضف منتجاتك",
+                description: "اربط مع سلة أو أضف منتجاتك يدوياً",
+                icon: ShoppingBag,
+              },
+              {
+                number: 3,
+                title: "أتمت الردود",
+                description: "ذكاء اصطناعي يرد على العملاء تلقائياً",
+                icon: Bot,
+              },
+              {
+                number: 4,
+                title: "راقب النتائج",
+                description: "تتبع المبيعات والأداء في الوقت الفعلي",
+                icon: BarChart3,
+              },
+            ].map((step, index) => {
+              const Icon = step.icon
+              return (
+                <motion.div
+                  key={step.number}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.3 + index * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                    {step.number}
+                  </div>
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground mb-2">{step.title}</h3>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                </motion.div>
+              )
+            })}
+          </motion.div>
+        </div>
+      </section>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      {/* Phone Mockup - See It Work */}
+      <Suspense
+        fallback={
+          <section className="py-32 bg-background">
+            <div className="container mx-auto px-4 md:px-6">
+              <div className="text-center mb-16">
+                <div className="h-8 bg-muted rounded w-64 mx-auto mb-4 animate-pulse"></div>
+                <div className="h-6 bg-muted rounded w-96 mx-auto animate-pulse"></div>
+              </div>
+              <div className="flex justify-center">
+                <div className="h-[600px] w-[300px] bg-muted/5 rounded-[2.5rem] animate-pulse"></div>
+              </div>
+            </div>
+          </section>
+        }
+      >
+        <PhoneMockup />
+      </Suspense>
+
+      {/* Numbers Showcase Section */}
+      <section className="py-24 md:py-32 bg-muted/20">
+        <div className="container mx-auto px-4 md:px-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              أرقام تتحدث عن نفسها
+            </h2>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto"
+          >
+            <div className="text-center">
+              {publicStats ? (
+                <>
+                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2">
+                    <AnimatedFormattedNumber
+                      value={publicStats.totalMessages}
+                      duration={2000}
+                    />
+                  </div>
+                  <div className="text-sm md:text-base text-muted-foreground">رسالة مرسلة</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2 animate-pulse">--</div>
+                  <div className="text-sm md:text-base text-muted-foreground">رسالة مرسلة</div>
+                </>
+              )}
+            </div>
+            <div className="text-center">
+              {publicStats ? (
+                <>
+                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2">
+                    <AnimatedFormattedNumber
+                      value={publicStats.activeOrganizations || publicStats.totalOrganizations}
+                      duration={2000}
+                    />
+                  </div>
+                  <div className="text-sm md:text-base text-muted-foreground">شركة نشطة</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2 animate-pulse">--</div>
+                  <div className="text-sm md:text-base text-muted-foreground">شركة نشطة</div>
+                </>
+              )}
+            </div>
+            <div className="text-center">
+              {publicStats ? (
+                <>
+                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2">
+                    <AnimatedFormattedNumber
+                      value={publicStats.totalCampaigns}
+                      duration={2000}
+                    />
+                  </div>
+                  <div className="text-sm md:text-base text-muted-foreground">حملة</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2 animate-pulse">--</div>
+                  <div className="text-sm md:text-base text-muted-foreground">حملة</div>
+                </>
+              )}
+            </div>
+            <div className="text-center">
+              {publicStats ? (
+                <>
+                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2">
+                    <AnimatedCounter
+                      value={publicStats.averageDeliveryRate}
+                      duration={2000}
+                      suffix="%"
+                    />
+                  </div>
+                  <div className="text-sm md:text-base text-muted-foreground">معدل التسليم</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2 animate-pulse">--</div>
+                  <div className="text-sm md:text-base text-muted-foreground">معدل التسليم</div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Testimonials - Success Stories */}
+      <section className="py-24 md:py-32 bg-background">
+        <div className="container mx-auto px-4 md:px-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              نتائج حقيقية من عملائنا
+            </h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {testimonials.map((testimonial, i) => (
               <motion.div
                 key={i}
@@ -580,17 +745,14 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="border border-border rounded-xl p-6 bg-background hover:border-primary/50 transition-colors"
+                className="rounded-xl p-6 bg-muted/30"
               >
                 <div className="space-y-4">
-                  <div className="flex gap-1">
-                    {[...Array(testimonial.rating)].map((_, j) => (
-                      <Star
-                        key={j}
-                        className="h-4 w-4 fill-yellow-400 text-yellow-400"
-                      />
-                    ))}
-                  </div>
+                  {testimonial.result && (
+                    <div className="text-2xl font-bold text-primary mb-2">
+                      {testimonial.result}
+                    </div>
+                  )}
                   <p className="text-sm text-muted-foreground leading-relaxed text-right">
                     "{testimonial.text}"
                   </p>
@@ -610,21 +772,21 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing - Choose Your Path */}
-      <section className="py-32 bg-background">
+      {/* Pricing - Sales-Focused */}
+      <section className="py-24 md:py-32 bg-muted/20">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-16"
+            className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              الأسعار
+              خطط تناسب كل احتياج
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              اختر الخطة المناسبة
+              ابدأ مجاناً وارتقِ حسب نمو عملك
             </p>
           </motion.div>
 
@@ -633,42 +795,57 @@ export default function LandingPage() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto"
+            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto"
           >
             {pricingPlans.map((plan, index) => (
               <div
                 key={index}
                 className={`h-full rounded-xl p-6 transition-all duration-300 ${
                   plan.popular
-                    ? "bg-muted/30"
+                    ? "bg-primary text-primary-foreground shadow-lg scale-105"
                     : "bg-background"
                 }`}
               >
+                {plan.popular && (
+                  <div className="text-center mb-3">
+                    <span className="text-xs font-semibold bg-white/20 px-3 py-1 rounded-full">
+                      الأكثر شعبية
+                    </span>
+                  </div>
+                )}
                 <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold mb-4">{plan.name}</h3>
+                  <h3 className={`text-xl font-bold mb-4 ${plan.popular ? "text-white" : ""}`}>
+                    {plan.name}
+                  </h3>
                   <div className="mb-2">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground mr-2">
+                    <span className={`text-4xl font-bold ${plan.popular ? "text-white" : ""}`}>
+                      {plan.price}
+                    </span>
+                    <span className={`mr-2 ${plan.popular ? "text-white/80" : "text-muted-foreground"}`}>
                       {" "}
                       {plan.currency}
                     </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">/شهر</span>
+                  <span className={`text-sm ${plan.popular ? "text-white/80" : "text-muted-foreground"}`}>
+                    /شهر
+                  </span>
                 </div>
                 <ul className="space-y-3 text-right mb-6">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                      <span className="text-sm">{feature}</span>
+                      <CheckCircle2 className={`h-5 w-5 shrink-0 mt-0.5 ${plan.popular ? "text-white" : "text-primary"}`} />
+                      <span className={`text-sm ${plan.popular ? "text-white/90" : ""}`}>
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>
                 <Button
                   className="w-full"
-                  variant={plan.popular ? "default" : "outline"}
+                  variant={plan.popular ? "secondary" : "default"}
                   onClick={() => router.push("/dashboard")}
                 >
-                  {plan.price === 0 ? "ابدأ مجاناً" : "اختر الخطة"}
+                  {plan.price === 0 ? "ابدأ مجاناً الآن" : "اختر الخطة وابدأ"}
                 </Button>
               </div>
             ))}
@@ -678,17 +855,17 @@ export default function LandingPage() {
 
 
       {/* FAQ - Your Questions */}
-      <section className="py-32 bg-background">
+      <section className="py-24 md:py-32 bg-background">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-16"
+            className="text-center mb-12"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              الأسئلة الشائعة
+              أسئلة شائعة
             </h2>
           </motion.div>
           <motion.div
@@ -714,83 +891,56 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA - Start Your Journey */}
-      <section className="py-32 bg-background">
+      {/* Final CTA - Sales-Focused */}
+      <section className="py-24 md:py-32 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 md:px-6">
           <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
-            className="text-center space-y-8 max-w-2xl mx-auto"
+            className="text-center space-y-8 max-w-3xl mx-auto"
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              جاهز للبدء؟
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold">
+              ابدأ الآن ووفر 50% من وقتك
             </h2>
-            <p className="text-lg text-muted-foreground">
-              انضم إلى آلاف الشركات
+            <p className="text-xl md:text-2xl text-primary-foreground/90">
+              {publicStats ? (
+                <>
+                  انضم إلى أكثر من{" "}
+                  <AnimatedFormattedNumber
+                    value={publicStats.activeOrganizations || publicStats.totalOrganizations}
+                    duration={2000}
+                  />{" "}
+                  شركة تستخدم منصتنا
+                </>
+              ) : (
+                <>انضم إلى آلاف الشركات تستخدم منصتنا</>
+              )}
             </p>
-            <Button
-              size="lg"
-              onClick={() => router.push("/dashboard")}
-              className="text-lg px-12 py-8 bg-primary hover:opacity-90 transition-opacity"
-            >
-              ابدأ النسخة التجريبية المجانية
-              <ArrowRight className="mr-2 h-5 w-5" />
-            </Button>
+            <div className="pt-4">
+              <Button
+                size="lg"
+                onClick={() => router.push("/dashboard")}
+                className="text-lg px-12 py-8 bg-white text-primary hover:bg-white/90 transition-opacity shadow-xl"
+              >
+                ابدأ مجاناً الآن - لا تفوت الفرصة
+                <ArrowRight className="mr-2 h-5 w-5" />
+              </Button>
+            </div>
+            <p className="text-sm text-primary-foreground/80">
+              بدون بطاقة ائتمان • إلغاء في أي وقت • دعم 24/7 • ابدأ في 5 دقائق
+            </p>
           </motion.div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t py-16 bg-background">
+      {/* Minimal Footer */}
+      <footer className="border-t py-8 bg-background">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-2xl mx-auto text-center space-y-8">
-            <div className="space-y-4">
-              <h3 className="font-bold text-lg">w-ai.online</h3>
-              <p className="text-sm text-muted-foreground">
-                أتمتة واتساب للأعمال مدعومة بالذكاء الاصطناعي.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
-              <Link
-                href="/#features"
-                className="text-muted-foreground hover:opacity-70 transition-opacity"
-              >
-                المميزات
-              </Link>
-              <Link
-                href="/#pricing"
-                className="text-muted-foreground hover:opacity-70 transition-opacity"
-              >
-                الأسعار
-              </Link>
-              <Link
-                href="/about"
-                className="text-muted-foreground hover:opacity-70 transition-opacity"
-              >
-                من نحن
-              </Link>
-              <Link
-                href="/contact"
-                className="text-muted-foreground hover:opacity-70 transition-opacity"
-              >
-                اتصل بنا
-              </Link>
-              <Link
-                href="/privacy"
-                className="text-muted-foreground hover:opacity-70 transition-opacity"
-              >
-                سياسة الخصوصية
-              </Link>
-              <Link
-                href="/terms"
-                className="text-muted-foreground hover:opacity-70 transition-opacity"
-              >
-                شروط الخدمة
-              </Link>
-            </div>
-            <div className="pt-8 border-t text-sm text-muted-foreground">
+          <div className="text-center">
+            <div className="text-lg font-bold text-foreground mb-2">w-ai.online</div>
+            <div className="text-sm text-muted-foreground">
               © 2024 w-ai.online. جميع الحقوق محفوظة.
             </div>
           </div>

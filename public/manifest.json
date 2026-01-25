@@ -1,0 +1,51 @@
+{
+  "name": "w-ai.online - أتمت واتساب للأعمال",
+  "short_name": "w-ai",
+  "description": "منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي. وفر 50% من وقتك وزد مبيعاتك 3x",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6F7F7",
+  "theme_color": "#1D4F34",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["business", "productivity", "communication"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "المحادثات",
+      "short_name": "Chat",
+      "description": "افتح المحادثات",
+      "url": "/chat",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "لوحة التحكم",
+      "short_name": "Dashboard",
+      "description": "افتح لوحة التحكم",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

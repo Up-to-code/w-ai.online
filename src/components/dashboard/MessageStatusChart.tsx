@@ -62,7 +62,12 @@ export function MessageStatusChart({ data }: MessageStatusChartProps) {
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                 </Pie>
-                <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                <ChartLegend 
+                  content={(props: any) => {
+                    if (!props?.payload) return null
+                    return <ChartLegendContent payload={props.payload} verticalAlign={props.verticalAlign} nameKey="name" />
+                  }} 
+                />
             </PieChart>
         </ChartContainer>
     )

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
-import { api } from "../../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -34,7 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { CronScheduler } from "@/components/CronScheduler"
 import { SchedulePicker } from "@/components/SchedulePicker"
 import { TemplatePreview } from "@/components/TemplatePreview"
-import type { Id } from "../../../../../convex/_generated/dataModel"
+import type { Id } from "@convex/_generated/dataModel"
 
 export default function NewCampaignPage() {
     const router = useRouter()

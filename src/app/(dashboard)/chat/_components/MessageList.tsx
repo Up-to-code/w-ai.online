@@ -2,7 +2,7 @@
 
 import { usePaginatedQuery } from "convex/react"
 import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react"
-import { api } from "../../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { MessageBubble } from "./MessageBubble"
 import { Button } from "@/components/ui/button"
 import { ArrowDown } from "lucide-react"

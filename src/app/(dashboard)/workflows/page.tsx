@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
-import { api } from "../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"

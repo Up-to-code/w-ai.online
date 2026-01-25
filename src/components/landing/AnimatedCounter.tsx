@@ -56,9 +56,9 @@ export function AnimatedCounter({
 
   const formatNumber = (num: number) => {
     if (decimals === 0) {
-      return Math.floor(num).toLocaleString("ar-SA")
+      return Math.floor(num).toLocaleString("en-US")
     }
-    return num.toFixed(decimals).toLocaleString("ar-SA")
+    return parseFloat(num.toFixed(decimals)).toLocaleString("en-US")
   }
 
   return (

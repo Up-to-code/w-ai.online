@@ -46,154 +46,21 @@ import {
 import { AvatarImage } from "@/components/ui/avatar"
 import { initialsFromName } from "@/lib/utils"
 
-// Sidebar Content Component
+// Sidebar Content Component - Simplified to logo only
 function SidebarContent({ pathname }: { pathname: string }) {
-  const { user } = useUserContext()
-  const { currentOrganization } = useOrganizationContext()
-  const router = useRouter()
-
-  const userName = user?.name || "المستخدم"
-  const userEmail = user?.email || "user@mail.com"
-  const userInitials = initialsFromName(userName)
-  const userAvatarUrl = user?.avatarUrl
-
-  const handleLogout = () => {
-    // WorkOS logout - redirect to WorkOS logout endpoint
-    window.location.href = "/api/auth/logout"
-  }
-  const menuItems = [
-    { href: "/dashboard", icon: LayoutDashboard, label: "لوحة التحكم" },
-    { href: "/chat", icon: MessageSquare, label: "المحادثات" },
-    { href: "/customers", icon: Users, label: "العملاء" },
-    { href: "/products", icon: Package, label: "المنتجات" },
-    { href: "/campaigns", icon: Megaphone, label: "الحملات" },
-    { href: "/templates", icon: FileText, label: "القوالب" },
-    { href: "/workflows", icon: Zap, label: "الأتمتة" },
-    { href: "/ai-settings", icon: Bot, label: "الذكاء الاصطناعي" },
-    { href: "/users", icon: UserCog, label: "إدارة المستخدمين" },
-  ]
-
-  const generalItems = [
-    { href: "/integrations", icon: Link2, label: "التكاملات" },
-    { href: "/settings", icon: Settings, label: "الإعدادات" },
-  ]
-
-  const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/dashboard" || pathname === "/"
-    return pathname.startsWith(href)
-  }
-
   return (
     <div className="flex flex-col h-full bg-sidebar">
-      {/* Logo */}
-      <div className="p-5 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <MessageSquare className="h-5 w-5 text-primary-foreground" />
+      {/* Logo/Branding */}
+      <div className="p-6 border-b border-sidebar-border flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
+            <MessageSquare className="h-6 w-6 text-primary-foreground" />
           </div>
-          <div>
-            <h1 className="text-lg font-bold text-sidebar-foreground">ChatCB</h1>
-            <p className="text-xs text-muted-foreground">WhatsApp Business</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Menu Section */}
-      <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">
-            الرئيسية
-          </p>
-          <div className="space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon
-              const active = isActive(item.href)
-              return (
-                <Link key={item.href} href={item.href}>
-                  <Button
-                    variant={active ? "secondary" : "ghost"}
-                    className={`w-full justify-start gap-3 h-11 ${active
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                      }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {item.label}
-                  </Button>
-                </Link>
-              )
-            })}
+          <div className="text-center">
+            <h1 className="text-lg font-bold text-sidebar-foreground">w-ai.online</h1>
+            <p className="text-xs text-muted-foreground">أتمت واتساب للأعمال</p>
           </div>
         </div>
-
-        {/* General Section */}
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">
-            عام
-          </p>
-          <div className="space-y-1">
-            {generalItems.map((item) => {
-              const Icon = item.icon
-              const active = isActive(item.href)
-              return (
-                <Link key={item.href} href={item.href}>
-                  <Button
-                    variant={active ? "secondary" : "ghost"}
-                    className={`w-full justify-start gap-3 h-11 ${active
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent"
-                      }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {item.label}
-                  </Button>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      </nav>
-
-      {/* User Section */}
-      <div className="p-4 border-t border-sidebar-border">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="flex items-center gap-3 p-2 rounded-xl bg-sidebar-accent/50 mb-3 cursor-pointer hover:bg-sidebar-accent transition-colors">
-              <Avatar className="h-9 w-9">
-                {userAvatarUrl && <AvatarImage src={userAvatarUrl} alt={userName} />}
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                  {userInitials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">{userName}</p>
-                <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
-              </div>
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>حسابي</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/settings")}>
-              <User className="h-4 w-4 mr-2" />
-              الملف الشخصي
-            </DropdownMenuItem>
-            {currentOrganization && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/settings")}>
-                  <Building2 className="h-4 w-4 mr-2" />
-                  إعدادات المنظمة
-                </DropdownMenuItem>
-              </>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-              <LogOut className="h-4 w-4 mr-2" />
-              تسجيل الخروج
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </div>
   )
