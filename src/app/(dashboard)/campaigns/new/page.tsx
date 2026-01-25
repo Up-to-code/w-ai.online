@@ -1,0 +1,599 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
+import { api } from "../../../../../convex/_generated/api"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import {
+    ArrowRight,
+    Users,
+    MessageSquare,
+    Calendar as CalendarIcon,
+    CheckCircle2,
+    Clock,
+    Tag,
+    Smartphone,
+    LayoutTemplate,
+    ChevronRight,
+    ChevronDown,
+    Play,
+    Shield,
+    X
+} from "lucide-react"
+import { format } from "date-fns"
+import { ar } from "date-fns/locale"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Switch } from "@/components/ui/switch"
+import { Checkbox } from "@/components/ui/checkbox"
+import { CronScheduler } from "@/components/CronScheduler"
+import { SchedulePicker } from "@/components/SchedulePicker"
+import { TemplatePreview } from "@/components/TemplatePreview"
+import type { Id } from "../../../../../convex/_generated/dataModel"
+
+export default function NewCampaignPage() {
+    const router = useRouter()
+    const [currentStep, setCurrentStep] = useState(0)
+
+    // Form Data
+    const [name, setName] = useState("")
+    const [scheduledAt, setScheduledAt] = useState<string>("")
+    const [recurrenceCronSpec, setRecurrenceCronSpec] = useState<string>("")
+    const [selectedTemplate, setSelectedTemplate] = useState<{ _id: string; name: string; components?: { type?: string; text?: string }[]; content?: string } | null>(null)
+    const [targetAudience, setTargetAudience] = useState<"all" | "tags">("all")
+    const [selectedTags, setSelectedTags] = useState<string[]>([])
+
+    // Anti-spam sending config
+    const [sendingConfig, setSendingConfig] = useState({
+        messagesPerSecond: 10,
+        delayBetweenMessages: 100,
+        maxRetries: 3,
+        skipRecentlyContacted: true,
+        recentContactHours: 24,
+    })
+    const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
+
+    // Queries
+    const templates = useUserQuery(api.templates.list, {})
+    const contacts = useUserQuery(api.contacts.list, { limit: 1000 })
+
+    const createCampaign = useUserMutation(api.campaigns.create)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Derived Stats
+    const filteredContacts = contacts?.filter((c: any) => {
+        if (targetAudience === 'all') return true
+        return c.tags?.some((t: any) => selectedTags.includes(t))
+    }) || []
+
+    const uniqueTags = Array.from(new Set(contacts?.flatMap((c: any) => c.tags || []) || []))
+
+    const handleSubmit = async () => {
+        setIsSubmitting(true)
+        try {
+            await createCampaign({
+                name,
+                templateId: selectedTemplate?._id as Id<"templates">,
+                templateName: selectedTemplate?.name || "",
+                targetTags: targetAudience === 'tags' ? selectedTags : undefined,
+                scheduledAt: scheduledAt ? new Date(scheduledAt).getTime() : Date.now(),
+                recurrenceCronSpec: recurrenceCronSpec || undefined,
+                sendingConfig
+            })
+            router.push("/campaigns?success=true")
+        } catch (error) {
+            console.error("Failed to create campaign:", error)
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const steps = [
+        { id: 0, title: "التفاصيل", icon: <LayoutTemplate className="h-4 w-4" /> },
+        { id: 1, title: "الجمهور", icon: <Users className="h-4 w-4" /> },
+        { id: 2, title: "المحتوى", icon: <MessageSquare className="h-4 w-4" /> },
+        { id: 3, title: "المراجعة", icon: <CheckCircle2 className="h-4 w-4" /> },
+    ]
+
+    return (
+        <div className="max-w-6xl mx-auto p-6 sm:p-8 animate-in fade-in duration-500">
+            {/* Header */}
+            <div className="flex items-center gap-4 mb-8">
+                <Button variant="ghost" size="icon" onClick={() => router.push("/campaigns")} className="rounded-xl">
+                    <ArrowRight className="h-5 w-5" />
+                </Button>
+                <div>
+                    <h1 className="text-2xl font-bold">إنشاء حملة جديدة</h1>
+                    <p className="text-muted-foreground">قم بإعداد حملتك في 4 خطوات بسيطة</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Steps Sidebar */}
+                <div className="lg:col-span-3 space-y-2">
+                    {steps.map((step) => (
+                        <div
+                            key={step.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ${
+                                currentStep === step.id 
+                                    ? "bg-primary text-primary-foreground" 
+                                    : currentStep > step.id 
+                                        ? "bg-muted text-foreground"
+                                        : "text-muted-foreground"
+                            }`}
+                        >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                currentStep === step.id ? "bg-white/20" : "bg-muted-foreground/10"
+                            }`}>
+                                {currentStep > step.id ? <CheckCircle2 className="h-5 w-5" /> : step.icon}
+                            </div>
+                            <span className="font-medium">{step.title}</span>
+                            {currentStep === step.id && <ChevronRight className="h-4 w-4 mr-auto animate-pulse" />}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Main Form Area */}
+                <div className="lg:col-span-9">
+                    <Card className="border bg-card/50 min-h-[500px]">
+                        <CardContent className="p-6">
+                            {/* Step 1: Details */}
+                            {currentStep === 0 && (
+                                <div className="space-y-6 max-w-2xl animate-in slide-in-from-bottom-4 duration-500">
+                                    <div className="space-y-2">
+                                        <Label className="text-base">اسم الحملة</Label>
+                                        <Input
+                                            placeholder="مثال: عروض الجمعة البيضاء"
+                                            value={name}
+                                            onChange={e => setName(e.target.value)}
+                                            className="h-12 text-lg"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    
+                                    <SchedulePicker
+                                        value={scheduledAt}
+                                        onChange={(datetime) => setScheduledAt(datetime || "")}
+                                        label="وقت الإرسال"
+                                    />
+
+                                    {/* Recurrence Section - Collapsible */}
+                                    <div className="space-y-4 pt-6 border-t mt-6">
+                                        <div 
+                                            className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
+                                                recurrenceCronSpec 
+                                                    ? 'border-primary bg-primary/5' 
+                                                    : 'border-border hover:border-primary/50'
+                                            }`}
+                                            onClick={() => {
+                                                if (!recurrenceCronSpec) {
+                                                    // Set default daily at 9 AM if enabling
+                                                    setRecurrenceCronSpec("0 9 * * *")
+                                                }
+                                            }}
+                                            role="button"
+                                            tabIndex={0}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault()
+                                                    if (!recurrenceCronSpec) {
+                                                        setRecurrenceCronSpec("0 9 * * *")
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                                    recurrenceCronSpec ? 'border-primary' : 'border-muted-foreground'
+                                                }`}>
+                                                    {recurrenceCronSpec && <div className="w-3 h-3 rounded-full bg-primary" />}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <Label className="cursor-pointer font-bold text-lg">
+                                                        تكرار دوري (اختياري)
+                                                    </Label>
+                                                </div>
+                                                {recurrenceCronSpec && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setRecurrenceCronSpec("")
+                                                        }}
+                                                        className="h-8 w-8 p-0"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-muted-foreground mr-9">
+                                                {recurrenceCronSpec 
+                                                    ? "الحملة ستعيد الإرسال تلقائياً حسب الجدولة" 
+                                                    : "إرسال الحملة بشكل متكرر (يومي، أسبوعي، شهري، سنوي)"}
+                                            </p>
+                                        </div>
+                                        {recurrenceCronSpec && (
+                                            <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                                                <CronScheduler
+                                                    value={recurrenceCronSpec}
+                                                    onChange={setRecurrenceCronSpec}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Anti-spam Settings */}
+                                    <div className="space-y-4 pt-6 border-t">
+                                        <div className="flex items-center gap-2">
+                                            <Shield className="h-5 w-5 text-green-600" />
+                                            <Label className="text-base font-semibold">حماية من الحظر</Label>
+                                        </div>
+                                        
+                                        <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-lg p-4 space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <span className="font-medium">تخطي المتصل مؤخراً</span>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        تجنب إرسال رسائل متكررة لنفس العميل
+                                                    </p>
+                                                </div>
+                                                <Switch
+                                                    checked={sendingConfig.skipRecentlyContacted}
+                                                    onCheckedChange={(checked) => 
+                                                        setSendingConfig(prev => ({ ...prev, skipRecentlyContacted: checked }))
+                                                    }
+                                                />
+                                            </div>
+                                            
+                                            {sendingConfig.skipRecentlyContacted && (
+                                                <div className="flex items-center gap-3 pr-4">
+                                                    <Label className="text-sm text-muted-foreground whitespace-nowrap">خلال:</Label>
+                                                    <select
+                                                        value={sendingConfig.recentContactHours}
+                                                        onChange={(e) => 
+                                                            setSendingConfig(prev => ({ ...prev, recentContactHours: Number(e.target.value) }))
+                                                        }
+                                                        className="h-9 px-3 rounded-lg border bg-background text-sm"
+                                                    >
+                                                        <option value={12}>12 ساعة</option>
+                                                        <option value={24}>24 ساعة</option>
+                                                        <option value={48}>48 ساعة</option>
+                                                        <option value={72}>72 ساعة</option>
+                                                    </select>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Advanced Settings Toggle */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                        >
+                                            <ChevronDown className={`h-4 w-4 transition-transform ${showAdvancedSettings ? 'rotate-180' : ''}`} />
+                                            إعدادات متقدمة
+                                        </button>
+
+                                        {showAdvancedSettings && (
+                                            <div className="bg-muted/30 border rounded-lg p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm">معدل الإرسال (رسائل/ثانية)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            min={1}
+                                                            max={80}
+                                                            value={sendingConfig.messagesPerSecond}
+                                                            onChange={(e) => 
+                                                                setSendingConfig(prev => ({ ...prev, messagesPerSecond: Number(e.target.value) }))
+                                                            }
+                                                            className="h-9"
+                                                        />
+                                                        <p className="text-xs text-muted-foreground">
+                                                            الحد الأقصى: 80 (ننصح بـ 10)
+                                                        </p>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm">التأخير بين الرسائل (مللي ثانية)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            min={50}
+                                                            max={5000}
+                                                            value={sendingConfig.delayBetweenMessages}
+                                                            onChange={(e) => 
+                                                                setSendingConfig(prev => ({ ...prev, delayBetweenMessages: Number(e.target.value) }))
+                                                            }
+                                                            className="h-9"
+                                                        />
+                                                        <p className="text-xs text-muted-foreground">
+                                                            ننصح بـ 100ms أو أكثر
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm">محاولات إعادة الإرسال</Label>
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        max={5}
+                                                        value={sendingConfig.maxRetries}
+                                                        onChange={(e) => 
+                                                            setSendingConfig(prev => ({ ...prev, maxRetries: Number(e.target.value) }))
+                                                        }
+                                                        className="h-9 w-24"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 2: Audience */}
+                            {currentStep === 1 && (
+                                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div
+                                            className={`relative p-6 border rounded-lg cursor-pointer transition-all overflow-hidden ${targetAudience === 'all' ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}
+                                            onClick={() => setTargetAudience('all')}
+                                        >
+                                            <div className="relative z-10">
+                                                <div className="w-12 h-12 rounded-xl bg-background flex items-center justify-center mb-4 border">
+                                                    <Users className="h-6 w-6 text-primary" />
+                                                </div>
+                                                <h3 className="text-lg font-bold mb-1">جميع العملاء</h3>
+                                                <p className="text-muted-foreground text-sm">إرسال لجميع جهات الاتصال المسجلة</p>
+                                                <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-background text-sm font-medium border">
+                                                    {contacts?.length || 0} عميل
+                                                </div>
+                                            </div>
+                                            {targetAudience === 'all' && <div className="absolute top-4 left-4 text-primary"><CheckCircle2 className="h-6 w-6" /></div>}
+                                        </div>
+
+                                        <div
+                                            className={`relative p-6 border rounded-lg cursor-pointer transition-all overflow-hidden ${targetAudience === 'tags' ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}
+                                            onClick={() => setTargetAudience('tags')}
+                                        >
+                                            <div className="relative z-10">
+                                                <div className="w-12 h-12 rounded-xl bg-background flex items-center justify-center mb-4 border">
+                                                    <Tag className="h-6 w-6 text-primary" />
+                                                </div>
+                                                <h3 className="text-lg font-bold mb-1">تحديد فئات</h3>
+                                                <p className="text-muted-foreground text-sm">استهداف مجموعة محددة حسب التصنيفات</p>
+                                            </div>
+                                            {targetAudience === 'tags' && <div className="absolute top-4 left-4 text-primary"><CheckCircle2 className="h-6 w-6" /></div>}
+                                        </div>
+                                    </div>
+
+                                    {targetAudience === 'tags' && (
+                                        <div className="space-y-4 bg-muted/30 p-6 rounded-lg border animate-in fade-in zoom-in-95">
+                                            <Label className="text-base">اختر التصنيفات المستهدفة</Label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {uniqueTags.map((tag: any) => (
+                                                    <Badge
+                                                        key={tag}
+                                                        variant={selectedTags.includes(tag) ? "default" : "outline"}
+                                                        className={`text-sm py-2 px-4 cursor-pointer hover:bg-primary/90 transition-all ${selectedTags.includes(tag) ? 'bg-primary text-primary-foreground' : 'bg-background hover:text-foreground'}`}
+                                                        onClick={() => {
+                                                            if (selectedTags.includes(tag)) {
+                                                                setSelectedTags(selectedTags.filter(t => t !== tag))
+                                                            } else {
+                                                                setSelectedTags([...selectedTags, tag])
+                                                            }
+                                                        }}
+                                                    >
+                                                        {tag}
+                                                        {selectedTags.includes(tag) && <CheckCircle2 className="h-3.5 w-3.5 mr-2" />}
+                                                    </Badge>
+                                                ))}
+                                                {uniqueTags.length === 0 && <p className="text-muted-foreground text-sm">لا توجد تصنيفات متاحة</p>}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg border border-blue-100 dark:border-blue-900/30 text-blue-800 dark:text-blue-300">
+                                        <span className="font-medium flex items-center gap-2">
+                                            <Users className="h-5 w-5" />
+                                            إجمالي المستلمين المتوقع:
+                                        </span>
+                                        <span className="text-xl font-bold">{filteredContacts.length}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 3: Content */}
+                            {currentStep === 2 && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-500">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-base">اختر القالب</Label>
+                                            <Badge variant="outline" className="font-normal">{templates?.filter((t: any) => t.status === 'APPROVED').length || 0} قوالب متاحة</Badge>
+                                        </div>
+                                        
+                                        <ScrollArea className="h-[400px] pr-4">
+                                            <div className="space-y-3">
+                                                {!templates ? (
+                                                    [1,2,3].map((i: number) => <div key={i} className="h-24 bg-muted animate-pulse rounded-lg" />)
+                                                ) : (
+                                                    templates.filter((t: any) => t.status === 'APPROVED').map((template: any) => (
+                                                        <div
+                                                            key={template._id}
+                                                            className={`p-4 border rounded-lg cursor-pointer transition-all ${selectedTemplate?._id === template._id ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}
+                                                            onClick={() => setSelectedTemplate(template)}
+                                                        >
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <h4 className="font-semibold">{template.name}</h4>
+                                                                {selectedTemplate?._id === template._id && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                                                            </div>
+                                                            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                                                                {(template.components as { type?: string; text?: string }[] | undefined)?.find(c => c.type === 'BODY')?.text || template.content}
+                                                            </p>
+                                                            <div className="mt-3 flex gap-2">
+                                                                <Badge variant="secondary" className="text-[10px]">{template.category}</Badge>
+                                                                <Badge variant="outline" className="text-[10px]">{template.language}</Badge>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </ScrollArea>
+                                    </div>
+
+                                    {/* Phone Preview */}
+                                    <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-900 border-[14px] rounded-[2.5rem] h-[500px] w-[300px]">
+                                        <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
+                                        <div className="h-[32px] w-[3px] bg-gray-800 absolute -left-[17px] top-[72px] rounded-l-lg"></div>
+                                        <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
+                                        <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
+                                        <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
+                                        <div className="rounded-[2rem] overflow-hidden w-full h-full bg-[#E5DDD5] dark:bg-[#111b21] relative flex flex-col">
+                                            {/* WhatsApp Header */}
+                                            <div className="bg-[#008069] dark:bg-[#202c33] p-3 pt-8 flex items-center gap-2 text-white">
+                                                <ChevronRight className="h-5 w-5 rotate-180" />
+                                                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                                                    <Smartphone className="h-4 w-4" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-semibold">W-AI Demo</div>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Message Area */}
+                                            <div className="flex-1 p-3 overflow-y-auto bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat opacity-90">
+                                                <TemplatePreview 
+                                                    template={selectedTemplate}
+                                                    className="max-w-[85%]"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Step 4: Review */}
+                            {currentStep === 3 && (
+                                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-4 border rounded-lg p-4">
+                                            <div>
+                                                <Label className="text-muted-foreground text-xs uppercase tracking-wider">الحملة</Label>
+                                                <div className="text-xl font-bold mt-1">{name}</div>
+                                            </div>
+                                            <div>
+                                                <Label className="text-muted-foreground text-xs uppercase tracking-wider">التوقيت</Label>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <Clock className="h-5 w-5 text-primary" />
+                                                    <span className="text-lg font-medium">
+                                                        {scheduledAt ? format(new Date(scheduledAt), "PPP p", { locale: ar }) : "إرسال فوري"}
+                                                    </span>
+                                                </div>
+                                                {recurrenceCronSpec && (
+                                                    <Badge variant="outline" className="mt-2">تكرار: {recurrenceCronSpec}</Badge>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <Label className="text-muted-foreground text-xs uppercase tracking-wider">الجمهور</Label>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <Users className="h-5 w-5 text-primary" />
+                                                    <span className="text-lg font-medium">{filteredContacts.length} مستلم</span>
+                                                </div>
+                                                <div className="text-sm text-muted-foreground mt-1">
+                                                    {targetAudience === 'all' ? 'جميع جهات الاتصال' : `التصنيفات: ${selectedTags.join(', ')}`}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border rounded-lg p-4">
+                                            <Label className="text-muted-foreground text-xs mb-3 block">محتوى الرسالة</Label>
+                                            <TemplatePreview template={selectedTemplate} />
+                                        </div>
+                                    </div>
+
+                                    {/* Anti-spam Settings Summary */}
+                                    <div className="bg-green-50/50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-lg p-4">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Shield className="h-5 w-5 text-green-600" />
+                                            <Label className="text-green-700 dark:text-green-300 font-semibold">حماية من الحظر مفعلة</Label>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+                                            <div>
+                                                <span className="text-muted-foreground">معدل الإرسال:</span>
+                                                <span className="font-medium mr-2">{sendingConfig.messagesPerSecond} رسائل/ثانية</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-muted-foreground">التأخير:</span>
+                                                <span className="font-medium mr-2">{sendingConfig.delayBetweenMessages}ms</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-muted-foreground">إعادة المحاولة:</span>
+                                                <span className="font-medium mr-2">{sendingConfig.maxRetries} مرات</span>
+                                            </div>
+                                            {sendingConfig.skipRecentlyContacted && (
+                                                <div className="col-span-2 sm:col-span-3">
+                                                    <span className="text-muted-foreground">تخطي المتصل خلال:</span>
+                                                    <span className="font-medium mr-2">{sendingConfig.recentContactHours} ساعة</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-4 p-4 bg-yellow-50/50 dark:bg-yellow-900/10 border border-yellow-100 dark:border-yellow-900/20 rounded-lg text-yellow-800 dark:text-yellow-200">
+                                        <Play className="h-5 w-5 mt-0.5 shrink-0" />
+                                        <div className="text-sm">
+                                            <p className="font-semibold mb-1">تنبيه هام</p>
+                                            <p className="opacity-90">
+                                                سيتم جدولة الحملة وإرسال الرسائل بشكل تدريجي (Batching) لتجنب الحظر من WhatsApp.
+                                                يمكنك متابعة حالة الإرسال في لوحة التحكم.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Navigation */}
+                            <div className="flex justify-between pt-8 border-t mt-8">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                                    disabled={currentStep === 0}
+                                    className="px-8"
+                                >
+                                    السابق
+                                </Button>
+                                
+                                {currentStep < 3 ? (
+                                    <Button
+                                        onClick={() => setCurrentStep(currentStep + 1)}
+                                        disabled={
+                                            (currentStep === 0 && !name) ||
+                                            (currentStep === 1 && filteredContacts.length === 0) ||
+                                            (currentStep === 2 && !selectedTemplate)
+                                        }
+                                        className="px-8 gap-2"
+                                    >
+                                        التالي <ArrowRight className="h-4 w-4 rotate-180" />
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        onClick={handleSubmit}
+                                        className="px-10 gap-2 bg-[#004D3D] hover:bg-[#003D2D]"
+                                        disabled={isSubmitting}
+                                    >
+                                        {isSubmitting ? "جاري الإنشاء..." : scheduledAt ? "تأكيد الجدولة" : "إرسال الحملة"}
+                                        {!isSubmitting && <CheckCircle2 className="h-4 w-4" />}
+                                    </Button>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </div>
+    )
+}
