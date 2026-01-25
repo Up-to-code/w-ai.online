@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { View, Text, StyleSheet, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
-import { useUserQuery, useUserMutation } from '../../../hooks/useUserQuery';
+import { useUserQuery } from '../../../hooks/useUserQuery';
 import { api } from '../../../../convex/_generated/api';
 import { ChatInput } from '../../../components/chat/ChatInput';
 import { MessageBubble } from '../../../components/chat/MessageBubble';

@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Card, Avatar, List } from 'react-native-paper';
 import { useUserQuery } from '../../hooks/useUserQuery';
-import { api } from '../../../convex/_generated/api';
+import { api } from '../../../../convex/_generated/api';
 import { useRouter } from 'expo-router';
 import { avatarColorFromString, initialsFromName } from '../../lib/utils';
 

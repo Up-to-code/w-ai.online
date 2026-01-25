@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Searchbar, FAB, Card, Avatar, Button } from 'react-native-paper';
 import { useUserQuery } from '../../hooks/useUserQuery';
-import { api } from '../../../convex/_generated/api';
+import { api } from '../../../../convex/_generated/api';
 import { useRouter } from 'expo-router';
 import { avatarColorFromString, initialsFromName } from '../../lib/utils';
 import { AddCustomerModal } from '../../components/customers/AddCustomerModal';
