@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Modal, Portal, TextInput, Button, Text } from 'react-native-paper';
 import { useUserMutation } from '../../hooks/useUserMutation';
-import { api } from '../../../convex/_generated/api';
+import { api } from '../../../../convex/_generated/api';
 
 interface AddCustomerModalProps {
   visible: boolean;
