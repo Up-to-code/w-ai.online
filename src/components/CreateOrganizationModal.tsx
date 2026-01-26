@@ -29,7 +29,7 @@ export function CreateOrganizationModal({
   onOpenChange,
   blocking = false,
 }: CreateOrganizationModalProps) {
-  const { userId } = useUserContext();
+  const { userId, user: appUser, workOSUser, isLoading: isUserLoading } = useUserContext();
   const createOrganization = useMutation(api.organizations.createOrganization);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -145,6 +145,9 @@ export function CreateOrganizationModal({
 
     console.log("[CreateOrganizationModal] handleSubmit called", {
       userId,
+      appUser,
+      workOSUser,
+      isUserLoading,
       name: formData.name,
       slug: formData.slug,
       isSubmitting,
@@ -154,9 +157,30 @@ export function CreateOrganizationModal({
       isSlugAvailable,
     });
 
+    // Check if user is still loading
+    if (isUserLoading) {
+      console.log("[CreateOrganizationModal] User is still loading");
+      toast.error("جارٍ تحميل بيانات المستخدم، يرجى الانتظار...");
+      return;
+    }
+
+    // Check if userId is missing
     if (!userId) {
-      console.log("[CreateOrganizationModal] No userId");
-      toast.error("يجب تسجيل الدخول أولاً");
+      // If workOSUser exists but appUser is null, user doesn't exist in database
+      if (workOSUser && appUser === null) {
+        console.log("[CreateOrganizationModal] WorkOS user exists but app user is null - user not created in database");
+        toast.error("لم يتم إنشاء حساب المستخدم بعد. يرجى المحاولة مرة أخرى أو تحديث الصفحة.");
+        return;
+      }
+      // If workOSUser doesn't exist, user is not authenticated
+      if (!workOSUser) {
+        console.log("[CreateOrganizationModal] No WorkOS user - not authenticated");
+        toast.error("يجب تسجيل الدخول أولاً");
+        return;
+      }
+      // Otherwise, user is still loading or unknown state
+      console.log("[CreateOrganizationModal] No userId - unknown state", { appUser, workOSUser });
+      toast.error("خطأ في تحميل بيانات المستخدم. يرجى تحديث الصفحة والمحاولة مرة أخرى.");
       return;
     }
 
@@ -306,7 +330,7 @@ export function CreateOrganizationModal({
               onChange={(e) => handleChange("name", e.target.value)}
               placeholder="أدخل اسم المنظمة"
               required
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUserLoading}
             />
           </div>
 
@@ -321,7 +345,7 @@ export function CreateOrganizationModal({
                 onChange={(e) => handleSlugChange(e.target.value)}
                 placeholder="my-organization"
                 required
-                disabled={isSubmitting}
+                disabled={isSubmitting || isUserLoading}
                 className={
                   slugError || isSlugTaken
                     ? "border-destructive pr-10"
@@ -367,6 +391,7 @@ export function CreateOrganizationModal({
               onClick={handleButtonClick}
               disabled={
                 isSubmitting ||
+                isUserLoading ||
                 !formData.name.trim() ||
                 !formData.slug.trim() ||
                 !!slugError ||
@@ -379,7 +404,12 @@ export function CreateOrganizationModal({
                   validateSlugFormat(formData.slug))
               }
             >
-              {isSubmitting ? (
+              {isUserLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  جاري تحميل بيانات المستخدم...
+                </>
+              ) : isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   جاري الإنشاء...
