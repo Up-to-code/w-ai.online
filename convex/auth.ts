@@ -62,14 +62,15 @@ export const getCurrentUser = query({
   args: {},
   handler: async (ctx, _args) => {
     const authUser = await authKit.getAuthUser(ctx);
+    console.log("getCurrentUser debug:", { authUser: authUser?.id });
     if (!authUser) return null;
-    
+
     // Get our app's user record
     const user = await ctx.db
       .query("users")
       .withIndex("by_auth_id", (q) => q.eq("authId", authUser.id))
       .first();
-    
+
     return user;
   },
 });
@@ -91,7 +92,7 @@ export const ensureUserExists = mutation({
       .query("users")
       .withIndex("by_auth_id", (q) => q.eq("authId", args.authId))
       .first();
-    
+
     // Create user if doesn't exist
     if (!user) {
       const name = `${args.firstName || ''} ${args.lastName || ''}`.trim() || args.email || "User";
@@ -104,7 +105,7 @@ export const ensureUserExists = mutation({
       });
       user = await ctx.db.get(userId);
     }
-    
+
     return user;
   },
 });
@@ -261,8 +262,8 @@ export const updateUser = mutation({
 });
 
 export const changePassword = mutation({
-  args: { 
-    userId: v.id("users"), 
+  args: {
+    userId: v.id("users"),
     currentPassword: v.string(),
     newPassword: v.string(),
   },
