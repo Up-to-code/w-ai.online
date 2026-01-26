@@ -14,10 +14,10 @@ export function useUserContext() {
   const ensureUserExists = useMutation(api.auth.ensureUserExists);
 
   // Get our app's user record based on WorkOS authId
+  // Using getByAuthId directly as a more reliable fallback when getAuthUser on server fails
   const appUser = useQuery(
-    api.auth.getCurrentUser,
-    {},
-    { enabled: !!workOSUser && !authLoading }
+    api.auth.getByAuthId,
+    workOSUser && !authLoading ? { authId: workOSUser.id } : "skip"
   );
 
   // Sync user if missing in DB but exists in WorkOS
