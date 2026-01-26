@@ -2,10 +2,10 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const saveKnowledge = mutation({
-  args: { 
+  args: {
     userId: v.id("users"), // User creating the knowledge
-    title: v.string(), 
-    content: v.string() 
+    title: v.string(),
+    content: v.string()
   },
   handler: async (ctx, args) => {
     // Get user's current organization
@@ -41,5 +41,23 @@ export const listKnowledge = query({
       .withIndex("by_org", (q) => q.eq("organizationId", user.currentOrganizationId))
       .order("desc")
       .collect();
+  },
+});
+
+export const deleteKnowledge = mutation({
+  args: {
+    userId: v.id("users"),
+    id: v.id("knowledge_base")
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user || !user.currentOrganizationId) {
+      throw new Error("يجب أن يكون لديك منظمة نشطة");
+    }
+    const knowledge = await ctx.db.get(args.id);
+    if (!knowledge || knowledge.organizationId !== user.currentOrganizationId) {
+      throw new Error("لم يتم العثور على المدخل أو غير مصرح لك بحذفه");
+    }
+    await ctx.db.delete(args.id);
   },
 });

@@ -24,9 +24,9 @@ http.route({
     const code = url.searchParams.get("code");
     const error = url.searchParams.get("error");
     const state = url.searchParams.get("state");
-    
+
     logger.info(`[AuthKit Callback] Received: ${request.url}`);
-    
+
     // Parse state to get return path (default to /dashboard)
     let returnPath = "/dashboard";
     if (state && state.trim() !== "") {
@@ -43,11 +43,11 @@ http.route({
         logger.debug("[AuthKit Callback] Could not parse state, using default path:", e);
       }
     }
-    
+
     // Build redirect URL to Next.js app
     const nextJsUrl = new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
     nextJsUrl.pathname = "/callback";
-    
+
     // Preserve code and state parameters for Next.js middleware to process
     if (code) {
       nextJsUrl.searchParams.set("code", code);
@@ -58,7 +58,7 @@ http.route({
     if (error) {
       nextJsUrl.searchParams.set("error", error);
     }
-    
+
     // Add returnPath to state or as separate parameter for Next.js
     // Next.js middleware will handle the OAuth code exchange
     const redirectUrl = nextJsUrl.toString();
@@ -75,7 +75,7 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/").filter(Boolean);
-    
+
     // Extract organization slug, webhook slug, or userId from path
     // Priority: organization slug > webhook slug (wh_) > userId (Convex ID)
     let webhookUserId: string | null = null;
@@ -136,7 +136,7 @@ http.route({
         // Webhook verification succeeded - it's already marked as verified in verifyWebhook action
         const identifier = organizationSlug || webhookSlug || webhookUserId || "default";
         logger.info(`[HTTP] ✓ Webhook verification successful for ${identifier}`);
-        return new Response(result.challenge, { 
+        return new Response(result.challenge, {
           status: 200,
           headers: {
             "Content-Type": "text/plain",
@@ -161,7 +161,7 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
     const pathParts = url.pathname.split("/").filter(Boolean);
-    
+
     // Extract organization slug, webhook slug, or userId from path
     // Priority: organization slug > webhook slug (wh_) > userId (Convex ID)
     let webhookUserId: string | null = null;
@@ -250,8 +250,8 @@ http.route({
       }
 
       // Get our app's user record
-      const user = await ctx.runQuery(api.auth.getByAuthId, { 
-        authId: identity.subject 
+      const user = await ctx.runQuery(api.auth.getByAuthId, {
+        authId: identity.subject
       });
       if (!user) {
         throw new Error("User not found");
@@ -261,10 +261,10 @@ http.route({
       const organizationId = user.currentOrganizationId || undefined;
 
       // Exchange code for tokens
-      await ctx.runAction(internal.salla.exchangeCode, { 
+      await ctx.runAction(internal.salla.exchangeCode, {
         userId: user._id, // Multi-tenant: pass userId
         organizationId: organizationId, // Multi-tenant: pass organizationId if available
-        code 
+        code
       });
 
       // Redirect to integrations page with success

@@ -57,7 +57,7 @@ export default function DashboardPage() {
 
     if (userLoading || !stats) {
         return (
-            <div className="p-8 sm:p-12 space-y-8 animate-pulse" dir="rtl">
+            <div className="p-8 sm:p-12 space-y-8 animate-pulse">
                 <div className="h-12 bg-slate-100 rounded-[16px] w-1/4"></div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {[1, 2, 3, 4].map(i => (
@@ -74,18 +74,18 @@ export default function DashboardPage() {
 
     const mainStats = [
         { label: "إجمالي الرسائل", value: stats.totalMessages, trend: stats.totalMessagesTrend, icon: MessageSquare, color: "text-primary bg-primary/10" },
-        { label: "العملاء الجدد", value: stats.totalContacts, trend: stats.totalContactsTrend, icon: Users, color: "text-success bg-success/10" },
+        { label: "عملاء جدد", value: stats.totalContacts, trend: stats.totalContactsTrend, icon: Users, color: "text-success bg-success/10" },
         { label: "معدل التسليم", value: `${stats.deliveryRate?.toFixed(1) || 0}%`, trend: stats.deliveryRateTrend, icon: Send, color: "text-info bg-info/10" },
         { label: "معدل القراءة", value: `${stats.readRate?.toFixed(1) || 0}%`, trend: stats.readRateTrend, icon: Eye, color: "text-warning bg-warning/10" },
     ]
 
     return (
-        <div className="p-6 sm:p-10 space-y-10 bg-background min-h-full" dir="rtl">
+        <div className="p-6 sm:p-10 space-y-10 bg-background min-h-full">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
                 <div className="space-y-1">
                     <h1 className="text-4xl font-black text-foreground tracking-tight">لوحة التحكم</h1>
-                    <p className="text-lg text-muted-foreground font-medium">نظرة سريعة على أداء عملك اليوم</p>
+                    <p className="text-lg text-muted-foreground font-medium">نظرة عامة على أداء حملاتك ورسائلك</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
                     <PeriodSelector value={timeFilter} onChange={setTimeFilter} />
@@ -137,7 +137,7 @@ export default function DashboardPage() {
                             <MessagesChart data={stats.chartData} />
                         ) : (
                             <div className="flex items-center justify-center h-[300px] text-muted-foreground font-medium">
-                                لا توجد بيانات كافية للفترة المحددة
+                                لا توجد بيانات لهذه الفترة
                             </div>
                         )}
                     </CardContent>
@@ -145,7 +145,7 @@ export default function DashboardPage() {
 
                 <Card className="lg:col-span-1 border border-border/50 bg-card rounded-[24px] overflow-hidden p-6">
                     <CardHeader className="px-2 pb-6">
-                        <CardTitle className="text-xl font-black">توزيع الحالة</CardTitle>
+                        <CardTitle className="text-xl font-black">توزيع حالة الرسائل</CardTitle>
                     </CardHeader>
                     <CardContent className="px-0">
                         {stats.messageStatusData ? (
@@ -208,7 +208,7 @@ export default function DashboardPage() {
                         {(!stats.recentActivity || stats.recentActivity.length === 0) && (
                             <div className="text-center py-10">
                                 <History className="h-10 w-10 text-slate-200 mx-auto mb-2" />
-                                <p className="text-sm text-muted-foreground font-medium">لا يوجد نشاط حديث لعرضه</p>
+                                <p className="text-sm text-muted-foreground font-medium">لا يوجد نشاط حديث</p>
                             </div>
                         )}
                     </CardContent>

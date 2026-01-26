@@ -35,13 +35,13 @@ export default function IntegrationsPage() {
     const { userId } = useUserContext()
     const { currentOrganization } = useOrganizationContext()
     const organizationId = currentOrganization?._id
-    
+
     const sallaConnection = useQuery(
-        api.salla.getConnection, 
+        api.salla.getConnection,
         organizationId ? { organizationId } : userId ? { userId } : "skip"
     )
     const metaConnection = useQuery(
-        api.meta.getConnection, 
+        api.meta.getConnection,
         organizationId ? { organizationId } : userId ? { userId } : "skip"
     )
     const disconnectSalla = useUserMutation(api.salla.disconnect)
@@ -81,7 +81,7 @@ export default function IntegrationsPage() {
         if (!userId) return
         try {
             setIsConnecting(true)
-            await disconnectSalla({ 
+            await disconnectSalla({
                 userId,
                 ...(organizationId && { organizationId })
             })
@@ -96,7 +96,7 @@ export default function IntegrationsPage() {
         if (!userId) return
         try {
             setIsConnecting(true)
-            await disconnectMeta({ 
+            await disconnectMeta({
                 userId,
                 ...(organizationId && { organizationId })
             })

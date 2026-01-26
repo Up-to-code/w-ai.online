@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import { Cairo, Tajawal } from "next/font/google";
+import { Cairo } from "next/font/google";
 import "./globals.css";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const tajawal = Cairo({
-  subsets: ["arabic",
-    "latin"
-  ],
+  subsets: ["arabic", "latin"],
 });
 
 export const metadata: Metadata = {
@@ -18,20 +16,9 @@ export const metadata: Metadata = {
   },
   description: "W-AI منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي. وفر 50% من وقتك وزد مبيعاتك 3x مع ردود تلقائية ذكية وإدارة محادثات موحدة.",
   keywords: [
-    "واتساب للأعمال",
-    "WhatsApp Business",
-    "أتمتة واتساب",
-    "ذكاء اصطناعي",
-    "AI",
-    "chatbot",
-    "إدارة محادثات",
-    "حملات تسويقية",
-    "واتساب API",
-    "Meta Business",
-    "automation",
-    "customer service",
-    "w-ai",
-    "w-ai.online"
+    "واتساب للأعمال", "WhatsApp Business", "أتمتة واتساب", "ذكاء اصطناعي", "AI",
+    "chatbot", "إدارة محادثات", "حملات تسويقية", "واتساب API", "Meta Business",
+    "automation", "customer service", "w-ai", "w-ai.online"
   ],
   authors: [{ name: "w-ai.online" }],
   creator: "w-ai.online",
@@ -98,9 +85,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -166,9 +153,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteData) }}
         />
       </head>
-      <body
-        className={`${tajawal.className} antialiased font-sans`}
-      >
+      <body className={`${tajawal.className} antialiased font-sans`}>
         <ConvexClientProvider>
           <ErrorBoundary>
             {children}

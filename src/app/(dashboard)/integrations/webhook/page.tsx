@@ -38,12 +38,12 @@ import {
 import { toast } from "sonner"
 
 const STEPS = [
-    { id: 1, title: "Access Token", description: "Enter your Meta Access Token" },
-    { id: 2, title: "Phone Numbers", description: "Add phone numbers with details" },
-    { id: 3, title: "Save", description: "Save configuration" },
-    { id: 4, title: "Webhook URL", description: "Copy webhook URL and token" },
-    { id: 5, title: "Verification", description: "Verify with Meta" },
-    { id: 6, title: "Complete", description: "Ready to use" },
+    { id: 1, title: "رمز الوصول", description: "أدخل رمز الوصول (Access Token) الخاص بـ Meta" },
+    { id: 2, title: "أرقام الهواتف", description: "أضف أرقام الهواتف مع التفاصيل" },
+    { id: 3, title: "حفظ", description: "حفظ التكوين" },
+    { id: 4, title: "رابط Webhook", description: "انسخ رابط Webhook ورمز التحقق" },
+    { id: 5, title: "التحقق", description: "التحقق مع Meta" },
+    { id: 6, title: "اكتمل", description: "جاهز للاستخدام" },
 ]
 
 interface PhoneNumberData {
@@ -58,7 +58,7 @@ export default function WebhookConfigurationPage() {
     const { currentOrganization } = useOrganizationContext()
     const organizationId = currentOrganization?._id
     const organizationSlug = currentOrganization?.slug
-    
+
     const connectMetaManually = useAction(api.meta.connectManually)
     const updatePhoneNumberLookupForAll = useAction(api.meta.updatePhoneNumberLookupForAll)
     const sendTestMessage = useAction(api.whatsapp.sendMessage)
@@ -68,7 +68,7 @@ export default function WebhookConfigurationPage() {
     const createWebhook = useMutation(api.webhooks.createWebhook)
     const updateWebhook = useMutation(api.webhooks.updateWebhook)
     const vaultEnvVars = useQuery(api.vault.getOrganizationEnvVars, organizationId ? { organizationId } : "skip")
-    
+
     const existingWebhook = webhooks && webhooks.length > 0 ? webhooks[0] : null
 
     const [currentStep, setCurrentStep] = useState(1)
@@ -80,7 +80,7 @@ export default function WebhookConfigurationPage() {
     const [testPhone, setTestPhone] = useState("")
     const [phoneError, setPhoneError] = useState<string | null>(null)
     const [isSendingTest, setIsSendingTest] = useState(false)
-    
+
     const [accessToken, setAccessToken] = useState("")
     const [wabaId, setWabaId] = useState("")
     const [appId, setAppId] = useState("")
@@ -94,7 +94,7 @@ export default function WebhookConfigurationPage() {
     // Get webhook URL with organization slug
     const getWebhookUrl = () => {
         if (!organizationSlug) return "https://your-deployment.convex.site/whatsapp/webhook"
-        
+
         const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || ""
         if (convexUrl.includes("convex.cloud")) {
             const match = convexUrl.match(/https:\/\/([^.]+)\.convex\.cloud/)
@@ -111,7 +111,7 @@ export default function WebhookConfigurationPage() {
     const formatPhoneNumber = (value: string): string => {
         // Remove all non-digits
         const digits = value.replace(/\D/g, '');
-        
+
         // Format based on length
         if (digits.length <= 3) return digits;
         if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
@@ -143,7 +143,7 @@ export default function WebhookConfigurationPage() {
     const handlePhoneChange = (value: string) => {
         const formatted = formatPhoneNumber(value);
         setTestPhone(formatted);
-        
+
         // Validate and set error
         const error = validatePhoneNumber(formatted);
         setPhoneError(error);
@@ -162,27 +162,27 @@ export default function WebhookConfigurationPage() {
                     wabaId: existingWebhook.wabaId || "",
                 })))
             }
-            
+
             // Load App ID
             if (existingWebhook.appId) setAppId(existingWebhook.appId)
-            
+
             // Load verify token from webhook first, then fallback to vault
             if (existingWebhook.verifyToken) {
                 setVerifyToken(existingWebhook.verifyToken)
             } else if (vaultEnvVars?.META_WEBHOOK_VERIFY_TOKEN) {
                 setVerifyToken(vaultEnvVars.META_WEBHOOK_VERIFY_TOKEN)
             }
-            
+
             // Load WABA ID from vault if available (for display/validation)
             if (vaultEnvVars?.META_WABA_ID && phoneNumbers.length > 0 && !phoneNumbers[0].wabaId) {
-                setPhoneNumbers(prev => prev.map((p, i) => 
+                setPhoneNumbers(prev => prev.map((p, i) =>
                     i === 0 ? { ...p, wabaId: vaultEnvVars.META_WABA_ID } : p
                 ))
             }
-            
+
             // Note: Access token is stored encrypted and not loaded for security reasons
             // User will need to re-enter it if they want to update it
-            
+
             // Determine starting step
             if (existingWebhook.isVerified) {
                 setCurrentStep(6)
@@ -253,7 +253,7 @@ export default function WebhookConfigurationPage() {
             updated[index] = { ...updated[index], [field]: value }
         }
         setPhoneNumbers(updated)
-        
+
         // Clear error when user starts typing
         if (error && error.includes("أرقام الهواتف")) {
             setError(null)
@@ -265,7 +265,7 @@ export default function WebhookConfigurationPage() {
         // Only allow digits
         const digitsOnly = value.replace(/\D/g, '');
         setAppId(digitsOnly)
-        
+
         // Clear error when user starts typing
         if (error && error.includes("App ID")) {
             setError(null)
@@ -287,7 +287,7 @@ export default function WebhookConfigurationPage() {
             toast.error("يجب تسجيل الدخول أولاً")
             return
         }
-        
+
         if (!organizationId) {
             toast.error("يجب إنشاء منظمة أولاً")
             return
@@ -295,7 +295,7 @@ export default function WebhookConfigurationPage() {
 
         // Get cleaned phone number (digits only)
         const phoneDigits = testPhone.replace(/\D/g, '');
-        
+
         // Validate phone number format
         if (!phoneDigits) {
             setPhoneError("أدخل رقم هاتف للاختبار")
@@ -313,7 +313,7 @@ export default function WebhookConfigurationPage() {
         // Clear any previous errors
         setPhoneError(null);
         setIsSendingTest(true)
-        
+
         try {
             await sendTestMessage({
                 organizationId, // Organization-scoped
@@ -327,14 +327,14 @@ export default function WebhookConfigurationPage() {
         } catch (e: unknown) {
             const err = e as Error & { code?: number; category?: string }
             let msg = err instanceof Error ? err.message : "فشل إرسال الرسالة التجريبية"
-            
+
             // Handle phone number format errors
             if (msg.includes("Invalid phone number format") || msg.includes("phone number")) {
                 setPhoneError("تنسيق رقم الهاتف غير صحيح. يجب أن يحتوي على 7-15 رقم")
                 toast.error("تنسيق رقم الهاتف غير صحيح. يجب أن يحتوي على 7-15 رقم")
                 return
             }
-            
+
             // Special handling for phone not in allowed list error (131030)
             if (err.code === 131030 || err.category === "PHONE_NOT_ALLOWED" || msg.includes("131030") || msg.includes("not in allowed list")) {
                 toast.error(msg, {
@@ -374,13 +374,13 @@ export default function WebhookConfigurationPage() {
             } catch (error: any) {
                 lastError = error;
                 const errorMessage = error?.message || "";
-                const isConnectionError = 
+                const isConnectionError =
                     errorMessage.includes("Connection lost") ||
                     errorMessage.includes("connection") ||
                     errorMessage.includes("Connection") ||
                     error?.name === "ConvexError" ||
                     errorMessage.includes("in flight");
-                
+
                 if (isConnectionError && attempt < maxRetries) {
                     const waitTime = delayMs * Math.pow(2, attempt - 1);
                     toast.info(`فقد الاتصال بالخادم. جاري إعادة المحاولة... (${attempt}/${maxRetries})`, {
@@ -451,9 +451,9 @@ export default function WebhookConfigurationPage() {
             return false
         }
 
-        const emptyPhones = phoneNumbers.some(phone => 
-            !phone.phoneNumberId.trim() || 
-            !phone.businessName.trim() || 
+        const emptyPhones = phoneNumbers.some(phone =>
+            !phone.phoneNumberId.trim() ||
+            !phone.businessName.trim() ||
             !phone.wabaId.trim()
         )
         if (emptyPhones) {
@@ -505,9 +505,9 @@ export default function WebhookConfigurationPage() {
         }
 
         // Validate all phone numbers are filled
-        const emptyPhones = phoneNumbers.some(phone => 
-            !phone.phoneNumberId.trim() || 
-            !phone.businessName.trim() || 
+        const emptyPhones = phoneNumbers.some(phone =>
+            !phone.phoneNumberId.trim() ||
+            !phone.businessName.trim() ||
             !phone.wabaId.trim()
         )
         if (emptyPhones) {
@@ -553,7 +553,7 @@ export default function WebhookConfigurationPage() {
             // Retrieve verify token from vault to ensure consistency
             const vaultVerifyToken = vaultEnvVars?.META_WEBHOOK_VERIFY_TOKEN?.trim()
             const stateVerifyToken = verifyToken?.trim()
-            
+
             // Use vault token if available, otherwise use state token, otherwise generate new
             let finalVerifyToken = vaultVerifyToken || stateVerifyToken
             if (!finalVerifyToken) {
@@ -564,7 +564,7 @@ export default function WebhookConfigurationPage() {
                 setVerifyToken(vaultVerifyToken)
             }
 
-                logger.debug("[Webhook Save] Using verify token:", {
+            logger.debug("[Webhook Save] Using verify token:", {
                 fromVault: !!vaultVerifyToken,
                 fromState: !!stateVerifyToken,
                 finalToken: finalVerifyToken.substring(0, 10) + "...",
@@ -590,43 +590,43 @@ export default function WebhookConfigurationPage() {
                         })
                     }, 3, 1000)
                 } catch (connectError: any) {
-                logger.error("Connect Meta error:", connectError)
-                let connectErrorMessage = "فشل الاتصال بـ Meta. يرجى التحقق من بيانات API."
-                
-                if (connectError.message) {
-                    const errorMsg = connectError.message.toLowerCase();
-                    
-                    // Connection errors
-                    if (errorMsg.includes("connection lost") || errorMsg.includes("connection") || errorMsg.includes("in flight")) {
-                        connectErrorMessage = "فشل الاتصال بعد عدة محاولات. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى."
-                    } 
-                    // Network errors
-                    else if (errorMsg.includes("network") || errorMsg.includes("timeout") || errorMsg.includes("fetch")) {
-                        connectErrorMessage = "خطأ في الشبكة. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى."
+                    logger.error("Connect Meta error:", connectError)
+                    let connectErrorMessage = "فشل الاتصال بـ Meta. يرجى التحقق من بيانات API."
+
+                    if (connectError.message) {
+                        const errorMsg = connectError.message.toLowerCase();
+
+                        // Connection errors
+                        if (errorMsg.includes("connection lost") || errorMsg.includes("connection") || errorMsg.includes("in flight")) {
+                            connectErrorMessage = "فشل الاتصال بعد عدة محاولات. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى."
+                        }
+                        // Network errors
+                        else if (errorMsg.includes("network") || errorMsg.includes("timeout") || errorMsg.includes("fetch")) {
+                            connectErrorMessage = "خطأ في الشبكة. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى."
+                        }
+                        // Validation errors
+                        else if (errorMsg.includes("failed to validate") || errorMsg.includes("validation failed")) {
+                            connectErrorMessage = "فشل التحقق من بيانات Meta. يرجى التأكد من صحة Access Token و WABA ID و Phone Number ID."
+                        }
+                        // Not found errors
+                        else if (errorMsg.includes("not found") || errorMsg.includes("doesn't belong")) {
+                            connectErrorMessage = "Phone Number ID غير موجود أو لا ينتمي إلى WABA المحدد."
+                        }
+                        // WABA validation errors
+                        else if (errorMsg.includes("waba id validation failed")) {
+                            connectErrorMessage = "WABA ID غير صحيح. يرجى التحقق من WABA ID."
+                        }
+                        // Connection failed errors
+                        else if (errorMsg.includes("connection failed")) {
+                            connectErrorMessage = "فشل الاتصال بالخادم. يرجى المحاولة مرة أخرى."
+                        }
+                        // Other errors
+                        else {
+                            connectErrorMessage = connectError.message
+                        }
                     }
-                    // Validation errors
-                    else if (errorMsg.includes("failed to validate") || errorMsg.includes("validation failed")) {
-                        connectErrorMessage = "فشل التحقق من بيانات Meta. يرجى التأكد من صحة Access Token و WABA ID و Phone Number ID."
-                    } 
-                    // Not found errors
-                    else if (errorMsg.includes("not found") || errorMsg.includes("doesn't belong")) {
-                        connectErrorMessage = "Phone Number ID غير موجود أو لا ينتمي إلى WABA المحدد."
-                    } 
-                    // WABA validation errors
-                    else if (errorMsg.includes("waba id validation failed")) {
-                        connectErrorMessage = "WABA ID غير صحيح. يرجى التحقق من WABA ID."
-                    } 
-                    // Connection failed errors
-                    else if (errorMsg.includes("connection failed")) {
-                        connectErrorMessage = "فشل الاتصال بالخادم. يرجى المحاولة مرة أخرى."
-                    }
-                    // Other errors
-                    else {
-                        connectErrorMessage = connectError.message
-                    }
-                }
-                
-                throw new Error(connectErrorMessage)
+
+                    throw new Error(connectErrorMessage)
                 }
             } else if (isConnected && !accessToken.trim()) {
                 // In edit mode without new access token, just update webhook config
@@ -666,7 +666,7 @@ export default function WebhookConfigurationPage() {
             } catch (webhookError: any) {
                 logger.error("Webhook create/update error:", webhookError)
                 let webhookErrorMessage = "فشل حفظ إعدادات Webhook."
-                
+
                 if (webhookError.message) {
                     if (webhookError.message.includes("ArgumentValidationError") || webhookError.message.includes("validation")) {
                         webhookErrorMessage = "خطأ في التحقق من بيانات Webhook. يرجى التأكد من ملء جميع الحقول المطلوبة."
@@ -676,7 +676,7 @@ export default function WebhookConfigurationPage() {
                         webhookErrorMessage = webhookError.message
                     }
                 }
-                
+
                 throw new Error(webhookErrorMessage)
             }
 
@@ -696,13 +696,13 @@ export default function WebhookConfigurationPage() {
             setCurrentStep(4) // Move to webhook URL step
         } catch (err: any) {
             logger.error("Save error:", err)
-            
+
             // Handle specific error types with user-friendly messages
             let errorMessage = "فشل حفظ الإعدادات. يرجى التحقق من البيانات المدخلة."
-            
+
             if (err.message) {
                 const errorMsg = err.message.toLowerCase();
-                
+
                 // Connection errors
                 if (errorMsg.includes("connection lost") || errorMsg.includes("connection") || errorMsg.includes("in flight")) {
                     errorMessage = "فشل الاتصال بعد عدة محاولات. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى."
@@ -714,25 +714,25 @@ export default function WebhookConfigurationPage() {
                 // Validation errors
                 else if (errorMsg.includes("argumentvalidationerror") || errorMsg.includes("validation")) {
                     errorMessage = "خطأ في التحقق من البيانات. يرجى التأكد من ملء جميع الحقول المطلوبة بشكل صحيح."
-                } 
+                }
                 // Meta validation errors
                 else if (errorMsg.includes("failed to validate") || errorMsg.includes("validation failed")) {
                     errorMessage = "فشل التحقق من بيانات Meta. يرجى التأكد من صحة Access Token و WABA ID و Phone Number ID."
-                } 
+                }
                 // Not found errors
                 else if (errorMsg.includes("not found") || errorMsg.includes("غير موجود")) {
                     errorMessage = "لم يتم العثور على البيانات المطلوبة. يرجى المحاولة مرة أخرى."
-                } 
+                }
                 // Access denied errors
                 else if (errorMsg.includes("access denied") || errorMsg.includes("غير مصرح")) {
                     errorMessage = "ليس لديك صلاحية للوصول إلى هذا المورد."
-                } 
+                }
                 // Other errors - use the error message as-is
                 else {
                     errorMessage = err.message
                 }
             }
-            
+
             setError(errorMessage)
             toast.error(errorMessage, {
                 duration: 5000,
@@ -767,9 +767,9 @@ export default function WebhookConfigurationPage() {
                             )}
                         </div>
                         <p className="text-muted-foreground text-sm mt-1">
-                            {isConnected 
-                                ? "تعديل إعدادات Webhook الحالية لـ WhatsApp Business API"
-                                : "تكوين Webhook جديد لـ WhatsApp Business API"
+                            {isConnected
+                                ? "تعديل إعدادات الويب هوك الحالية لربط واتساب بزنس"
+                                : "تهيئة الويب هوك الخاص بـ WhatsApp Business API"
                             }
                         </p>
                     </div>
@@ -794,7 +794,7 @@ export default function WebhookConfigurationPage() {
                                     أنت تقوم بتعديل إعدادات Webhook الحالية
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    سيتم تحديث الإعدادات الحالية عند الحفظ. إذا كنت تريد تحديث Access Token، يرجى إدخاله في الخطوة الأولى.
+                                    أنت تقوم بتعديل إعدادات الويب هوك الحالية. سيتم تحديث الإعدادات عند الحفظ. إذا كنت تريد تحديث رمز الوصول، يرجى إدخاله في الخطوة الأولى.
                                 </p>
                                 {existingWebhook.isVerified && (
                                     <div className="flex items-center gap-2 mt-2">
@@ -816,13 +816,12 @@ export default function WebhookConfigurationPage() {
                         <div className="flex justify-between items-center overflow-x-auto pb-2">
                             {STEPS.map((step, index) => (
                                 <div key={step.id} className="flex items-center gap-3 min-w-fit">
-                                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 shrink-0 transition-all ${
-                                        currentStep > step.id 
-                                            ? "bg-success border-success text-white shadow-sm" 
-                                            : currentStep === step.id
+                                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 shrink-0 transition-all ${currentStep > step.id
+                                        ? "bg-success border-success text-white shadow-sm"
+                                        : currentStep === step.id
                                             ? "border-[#128C7E] bg-[#128C7E] text-white shadow-md scale-105"
                                             : "border-muted bg-background text-muted-foreground"
-                                    }`}>
+                                        }`}>
                                         {currentStep > step.id ? (
                                             <CheckCircle className="h-5 w-5" />
                                         ) : (
@@ -830,9 +829,8 @@ export default function WebhookConfigurationPage() {
                                         )}
                                     </div>
                                     <div className="hidden sm:block min-w-[120px]">
-                                        <p className={`text-sm font-semibold whitespace-nowrap ${
-                                            currentStep >= step.id ? "text-foreground" : "text-muted-foreground"
-                                        }`}>
+                                        <p className={`text-sm font-semibold whitespace-nowrap ${currentStep >= step.id ? "text-foreground" : "text-muted-foreground"
+                                            }`}>
                                             {step.title}
                                         </p>
                                         <p className="text-xs text-muted-foreground whitespace-nowrap mt-0.5">{step.description}</p>
@@ -1007,7 +1005,7 @@ export default function WebhookConfigurationPage() {
                                                 </Button>
                                             )}
                                         </div>
-                                        
+
                                         <div className="space-y-4">
                                             {/* Business Name */}
                                             <div className="space-y-2">
@@ -1297,11 +1295,10 @@ export default function WebhookConfigurationPage() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {verificationStatus && (
-                            <div className={`p-4 rounded-lg border-2 ${
-                                verificationStatus.isVerified 
-                                    ? "border-success/20 bg-success/5" 
-                                    : "border-warning/20 bg-warning/5"
-                            }`}>
+                            <div className={`p-4 rounded-lg border-2 ${verificationStatus.isVerified
+                                ? "border-success/20 bg-success/5"
+                                : "border-warning/20 bg-warning/5"
+                                }`}>
                                 <div className="flex items-center gap-3">
                                     {verificationStatus.isVerified ? (
                                         <CheckCircle2 className="h-5 w-5 text-success" />
@@ -1310,9 +1307,8 @@ export default function WebhookConfigurationPage() {
                                     )}
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
-                                            <p className={`font-medium ${
-                                                verificationStatus.isVerified ? "text-success" : "text-warning"
-                                            }`}>
+                                            <p className={`font-medium ${verificationStatus.isVerified ? "text-success" : "text-warning"
+                                                }`}>
                                                 {verificationStatus.isVerified ? "Webhook Verified" : "Webhook Not Verified"}
                                             </p>
                                             <Badge variant={verificationStatus.isVerified ? "default" : "secondary"} className={verificationStatus.isVerified ? "bg-success" : ""}>
@@ -1397,9 +1393,8 @@ export default function WebhookConfigurationPage() {
 
                         {/* Status Cards */}
                         <div className="grid gap-3">
-                            <div className={`p-4 rounded-lg border ${
-                                isConnected ? "border-success/20 bg-success/5" : "border-muted bg-muted/50"
-                            }`}>
+                            <div className={`p-4 rounded-lg border ${isConnected ? "border-success/20 bg-success/5" : "border-muted bg-muted/50"
+                                }`}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         {isConnected ? (
@@ -1414,9 +1409,8 @@ export default function WebhookConfigurationPage() {
                                     </Badge>
                                 </div>
                             </div>
-                            <div className={`p-4 rounded-lg border ${
-                                verificationStatus?.isVerified ? "border-success/20 bg-success/5" : "border-warning/20 bg-warning/5"
-                            }`}>
+                            <div className={`p-4 rounded-lg border ${verificationStatus?.isVerified ? "border-success/20 bg-success/5" : "border-warning/20 bg-warning/5"
+                                }`}>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         {verificationStatus?.isVerified ? (

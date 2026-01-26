@@ -116,7 +116,7 @@ export function ProductPicker({ onSelect, trigger }: ProductPickerProps) {
                                         </div>
                                     </div>
                                     <div className="p-3 flex flex-col flex-1">
-                                        <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-5 mb-auto" dir="rtl">{product.name}</h3>
+                                        <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-5 mb-auto" dir="auto">{product.name}</h3>
                                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/10">
                                             <span className="text-sm font-bold text-primary">{product.price} <span className="text-[10px] font-normal text-muted-foreground">{product.currency}</span></span>
                                             <Button size="sm" variant="ghost" className="h-7 w-7 rounded-full p-0">

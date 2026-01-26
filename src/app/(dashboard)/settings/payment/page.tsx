@@ -22,7 +22,7 @@ import { ar } from "date-fns/locale"
 export default function PaymentPage() {
   const { userId } = useUserContext()
   const { currentOrganization } = useOrganizationContext()
-  
+
   const orgSettings = useQuery(
     api.settings.getOrganizationSettings,
     currentOrganization?._id ? { organizationId: currentOrganization._id } : "skip"

@@ -1,6 +1,7 @@
 "use client"
 
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useUserQuery } from "@/hooks/useUserQuery"
 import { api } from "@convex/_generated/api"
 import { Id } from "@convex/_generated/dataModel"
@@ -109,7 +110,7 @@ export default function CampaignDetailPage() {
     : 0
 
   return (
-    <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto" dir="rtl">
+    <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="flex items-start gap-6">

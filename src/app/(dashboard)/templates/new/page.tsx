@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useAction, useMutation } from "convex/react"
 import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
 import { useUserContext } from "@/hooks/useUserContext"
@@ -676,7 +677,7 @@ export default function NewTemplatePage() {
     }
 
     return (
-        <div className="max-w-[1400px] mx-auto p-6 sm:p-10 animate-in fade-in duration-500" dir="rtl">
+        <div className="max-w-[1400px] mx-auto p-6 sm:p-10 animate-in fade-in duration-500">
             {/* Hidden File Input */}
             <input
                 type="file"
@@ -692,8 +693,8 @@ export default function NewTemplatePage() {
                     <ArrowRight className="h-6 w-6" />
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-foreground">{editName ? "نسخ وتعديل قالب" : "إنشاء قالب جديد"}</h1>
-                    <p className="text-base text-muted-foreground font-medium">صمم رسالة WhatsApp تفاعلية وجذابة واحترافية</p>
+                    <h1 className="text-3xl font-black tracking-tight text-foreground">{editName ? "تعديل القالب" : "إنشاء قالب جديد"}</h1>
+                    <p className="text-base text-muted-foreground font-medium">صمم رسالة واتساب احترافية لعملائك</p>
                 </div>
             </div>
 
@@ -708,26 +709,26 @@ export default function NewTemplatePage() {
                                     <div className="w-10 h-10 rounded-[14px] bg-primary/10 flex items-center justify-center text-primary">
                                         <Badge className="bg-primary/20 text-primary border-none text-xs font-black h-6 w-6 rounded-full p-0 flex items-center justify-center">1</Badge>
                                     </div>
-                                    <h3 className="text-xl font-black tracking-tight">هوية القالب واللغة</h3>
+                                    <h3 className="text-xl font-black tracking-tight">هوية القالب</h3>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
                                     <div className="space-y-3">
-                                        <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest mr-1">اسم القالب (إنجليزي)</Label>
+                                        <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest mr-1">اسم القالب (تلقائي)</Label>
                                         <Input
-                                            placeholder="مثال: seasonal_promotion_2024"
+                                            placeholder="مثال: welcome_message_v1"
                                             value={name}
                                             onChange={e => setName(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase())}
                                             className="font-mono h-12 rounded-[14px] border-2 border-border/50 font-bold bg-background focus:ring-primary/20 transition-all shadow-none"
                                         />
                                         <div className="flex items-center gap-2 mt-2 px-1">
                                             <AlertCircle className="h-3 w-3 text-muted-foreground/40" />
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">أحرف صغيرة وشرطة سفلية فقط (Meta Policy)</p>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">استخدم الحروف الإنجليزية والأرقام والشرطة السفلية فقط.</p>
                                         </div>
                                     </div>
 
                                     <div className="space-y-3">
-                                        <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest mr-1">اللغة المستهدفة</Label>
+                                        <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest mr-1">لغة القالب</Label>
                                         <Select value={language} onValueChange={setLanguage}>
                                             <SelectTrigger className="h-12 rounded-[14px] border-2 border-border/50 font-bold bg-background">
                                                 <SelectValue />
@@ -735,6 +736,7 @@ export default function NewTemplatePage() {
                                             <SelectContent className="rounded-[16px]">
                                                 <SelectItem value="ar" className="font-bold">العربية (Arabic)</SelectItem>
                                                 <SelectItem value="en" className="font-bold">الإنجليزية (English)</SelectItem>
+                                                stone
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -747,7 +749,7 @@ export default function NewTemplatePage() {
                                     <div className="w-10 h-10 rounded-[14px] bg-primary/10 flex items-center justify-center text-primary">
                                         <Badge className="bg-primary/20 text-primary border-none text-xs font-black h-6 w-6 rounded-full p-0 flex items-center justify-center">2</Badge>
                                     </div>
-                                    <h3 className="text-xl font-black tracking-tight">التصنيف والغرض من القالب</h3>
+                                    <h3 className="text-xl font-black tracking-tight">تصنيف ونوع القالب</h3>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
@@ -758,18 +760,18 @@ export default function NewTemplatePage() {
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent className="rounded-[16px]">
-                                                <SelectItem value="MARKETING" className="font-bold">تسويق (Marketing) - عروض وترويج</SelectItem>
-                                                <SelectItem value="UTILITY" className="font-bold">خدمي (Utility) - تحديثات الطلبات</SelectItem>
-                                                <SelectItem value="AUTHENTICATION" className="font-bold">توثيق (Auth) - أكواد التحقق</SelectItem>
+                                                <SelectItem value="MARKETING" className="font-bold">تسويق (Marketing)</SelectItem>
+                                                <SelectItem value="UTILITY" className="font-bold">خدمي (Utility)</SelectItem>
+                                                <SelectItem value="AUTHENTICATION" className="font-bold">توثيق (Authentication)</SelectItem>
+                                                stone
                                             </SelectContent>
                                         </Select>
                                     </div>
 
                                     <div className="space-y-3">
-                                        <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest mr-1">نوع هيكل القالب</Label>
+                                        <Label className="text-sm font-black text-muted-foreground uppercase tracking-widest mr-1">هيكل القالب</Label>
                                         <div className="grid grid-cols-2 gap-3">
                                             {[
-                                                { id: "STANDARD", icon: FileText, label: "قياسي" },
                                                 { id: "CAROUSEL", icon: Layers, label: "كاروسيل" },
                                                 { id: "PRODUCT_CAROUSEL", icon: ShoppingBag, label: "منتجات", isEcom: true },
                                                 { id: "CATALOG", icon: ShoppingBag, label: "كتالوج", isEcom: true }
@@ -806,7 +808,7 @@ export default function NewTemplatePage() {
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-500 font-black text-xs">3</div>
-                                            <h3 className="text-lg font-black tracking-tight">رأس الرسالة (Header Content)</h3>
+                                            <h3 className="text-lg font-black tracking-tight">رأس الرسالة (Header)</h3>
                                             <Badge variant="outline" className="border-slate-200 text-slate-400 font-bold text-[10px]">اختياري</Badge>
                                         </div>
 
@@ -820,7 +822,7 @@ export default function NewTemplatePage() {
                                                     { id: "NONE", label: "بدون", icon: X },
                                                     { id: "TEXT", label: "نص", icon: Type },
                                                     { id: "IMAGE", label: "صورة", icon: ImageIcon },
-                                                    { id: "VIDEO", label: "فيديو", icon: Video }
+                                                    { id: "VIDEO", label: "فيديوه", icon: Video }
                                                 ].map(h => {
                                                     const isDisabled = category === "AUTHENTICATION" && h.id !== "NONE";
                                                     return (
@@ -923,7 +925,7 @@ export default function NewTemplatePage() {
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-500 font-black text-xs">4</div>
-                                            <h3 className="text-lg font-black tracking-tight">محتوى الرسالة الأساسي</h3>
+                                            <h3 className="text-lg font-black tracking-tight">نص الرسالة الرئيسي</h3>
                                             <Badge className="bg-danger/10 text-danger border-none font-bold text-[10px]">إجباري</Badge>
                                         </div>
 
@@ -972,7 +974,7 @@ export default function NewTemplatePage() {
                                     <div className="space-y-8">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-500 font-black text-xs">5</div>
-                                            <h3 className="text-lg font-black tracking-tight">الإضافات التفاعلية</h3>
+                                            <h3 className="text-lg font-black tracking-tight">التفاعل والتذييل</h3>
                                             <Badge variant="outline" className="border-slate-200 text-slate-400 font-bold text-[10px]">اختياري</Badge>
                                         </div>
 
@@ -1191,7 +1193,7 @@ export default function NewTemplatePage() {
                                                                 <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest px-1">صورة/فيديو البطاقة</Label>
                                                                 <div className="aspect-square bg-slate-100 border-2 border-border/40 rounded-[20px] overflow-hidden flex flex-col items-center justify-center gap-3 group relative cursor-pointer" onClick={() => triggerUpload(i)}>
                                                                     {card.headerUrl ? (
-                                                                        <img src={card.headerUrl} className="h-full w-full object-cover" alt="Preview" />
+                                                                        <img src={card.headerUrl} className="w-full h-full object-cover" alt="Preview" />
                                                                     ) : (
                                                                         <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
                                                                     )}
@@ -1529,7 +1531,7 @@ export default function NewTemplatePage() {
                                 (templateType === "CATALOG" && (!catalogId || !catalogBodyText))
                             }
                         >
-                            {isSubmitting ? "جاري الإرسال..." : "إرسال للمراجعة"}
+                            {isSubmitting ? "جاري الحفظ..." : "حفظ القالب"}
                         </Button>
                     </div>
                 </div>

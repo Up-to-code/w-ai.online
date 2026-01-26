@@ -100,6 +100,8 @@ export default defineSchema({
     systemPrompt: v.string(),
     model: v.string(),
     temperature: v.optional(v.number()),
+    tools: v.optional(v.array(v.string())), // e.g., ["salla", "handoff", "media"]
+    activePhoneNumbers: v.optional(v.array(v.string())), // Array of phoneNumberIds
     isActive: v.boolean(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"])

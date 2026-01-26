@@ -40,6 +40,7 @@ import {
 import { cn } from "@/lib/utils"
 import { logger } from "@/lib/logger"
 
+
 export default function TemplatesPage() {
     const { userId } = useUserContext();
     const templates = useUserQuery(api.templates.list, {}) || []
@@ -64,10 +65,10 @@ export default function TemplatesPage() {
         try {
             if (!userId) throw new Error("User not authenticated");
             const count = await syncFromMeta({ userId })
-            showToast("success", `تم مزامنة ${count} قالب بنجاح`)
+            showToast("success", `تمت مزامنة ${count} قالب بنجاح`)
         } catch (error) {
             logger.error("Sync failed:", error)
-            showToast("error", "فشل في المزامنة")
+            showToast("error", "فشلت المزامنة. يرجى التحقق من إعدادات Meta.")
         } finally {
             setIsSyncing(false)
         }
@@ -79,15 +80,15 @@ export default function TemplatesPage() {
         try {
             if (!userId) throw new Error("User not authenticated");
             await deleteTemplate({ userId, name: deleteTemplateData.name })
-            showToast("success", `تم حذف القالب "${deleteTemplateData.name}" بنجاح`)
+            showToast("success", `تم حذف القالب ${deleteTemplateData.name} بنجاح`)
             setDeleteTemplateData(null)
         } catch (error: any) {
             logger.error("Delete failed:", error)
             const errorMessage = error.message || String(error)
             if (errorMessage.includes("Permission") || errorMessage.includes("(#100)")) {
-                showToast("error", "فشل الحذف: لا تملك صلاحيات كافية في حساب Meta")
+                showToast("error", "ليس لديك صلاحية لحذف هذا القالب")
             } else {
-                showToast("error", "فشل في حذف القالب")
+                showToast("error", "فشل الحذف. يرجى المحاولة مرة أخرى.")
             }
         } finally {
             setIsDeleting(false)
@@ -103,7 +104,7 @@ export default function TemplatesPage() {
     const getStatusBadge = (status: string) => {
         switch (status) {
             case "APPROVED":
-                return <Badge className="bg-success/10 text-success hover:bg-success/20 gap-1 shadow-none"><CheckCircle2 className="w-3 h-3" /> معتمد</Badge>
+                return <Badge className="bg-success/10 text-success hover:bg-success/20 gap-1 shadow-none"><CheckCircle2 className="w-3 h-3" /> مقبول</Badge>
             case "PENDING":
                 return <Badge variant="secondary" className="gap-1 bg-yellow-50 text-yellow-700 hover:bg-yellow-100"><Clock className="w-3 h-3" /> قيد المراجعة</Badge>
             case "REJECTED":
@@ -137,15 +138,15 @@ export default function TemplatesPage() {
     }
 
     return (
-        <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto" dir="rtl">
+        <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                 <div className="space-y-1">
                     <div className="flex items-center gap-3">
                         <FileText className="h-8 w-8 text-primary" />
-                        <h1 className="text-3xl font-black tracking-tight text-foreground">قوالب الرسائل</h1>
+                        <h1 className="text-3xl font-black tracking-tight text-foreground">القوالب</h1>
                     </div>
-                    <p className="text-base text-muted-foreground font-medium">إدارة وتخصيص قوالب WhatsApp المعتمدة</p>
+                    <p className="text-base text-muted-foreground font-medium">إدارة قوالب الرسائل الخاصة بك</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Button
@@ -170,9 +171,9 @@ export default function TemplatesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
                     { title: "إجمالي القوالب", value: stats.total, icon: FileText, color: "text-primary/70 bg-primary/5" },
-                    { title: "معتمدة", value: stats.approved, icon: CheckCircle2, color: "text-success/70 bg-success/5" },
-                    { title: "قيد المراجعة", value: stats.pending, icon: Clock, color: "text-yellow-500/70 bg-yellow-500/5" },
-                    { title: "مرفوضة", value: stats.rejected, icon: AlertTriangle, color: "text-destructive/70 bg-destructive/5" }
+                    { title: "قوالب مقبولة", value: stats.approved, icon: CheckCircle2, color: "text-success/70 bg-success/5" },
+                    { title: "قوالب قيد المراجعة", value: stats.pending, icon: Clock, color: "text-yellow-500/70 bg-yellow-500/5" },
+                    { title: "قوالب مرفوضة", value: stats.rejected, icon: AlertTriangle, color: "text-destructive/70 bg-destructive/5" }
                 ].map((stat, i) => (
                     <Card key={i} className="border border-border/50 bg-card rounded-[20px] shadow-none overflow-hidden">
                         <CardContent className="p-6">
@@ -197,7 +198,7 @@ export default function TemplatesPage() {
                 <div className="relative flex-1 min-w-[200px] max-w-md w-full group">
                     <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     <Input
-                        placeholder="بحث في القوالب..."
+                        placeholder="البحث عن قالب..."
                         className="pl-4 pr-12 bg-muted/20 border-border/50 rounded-[14px] h-12 font-bold text-base focus:ring-primary/20 transition-all shadow-none"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -207,8 +208,8 @@ export default function TemplatesPage() {
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <TabsList className="bg-transparent p-0 gap-1 w-full sm:w-auto">
                             <TabsTrigger value="all" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">الكل</TabsTrigger>
-                            <TabsTrigger value="approved" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">معتمد</TabsTrigger>
-                            <TabsTrigger value="pending" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">مراجعة</TabsTrigger>
+                            <TabsTrigger value="approved" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">مقبول</TabsTrigger>
+                            <TabsTrigger value="pending" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">قيد المراجعة</TabsTrigger>
                             <TabsTrigger value="rejected" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">مرفوض</TabsTrigger>
                         </TabsList>
                     </Tabs>
@@ -221,9 +222,9 @@ export default function TemplatesPage() {
                     <div className="w-24 h-24 bg-primary/5 rounded-[28px] flex items-center justify-center mb-6 border-2 border-primary/10">
                         <FileText className="h-10 w-10 text-primary" />
                     </div>
-                    <h3 className="text-2xl font-black mb-3 text-foreground tracking-tight">لا توجد قوالب حتى الآن</h3>
+                    <h3 className="text-2xl font-black mb-3 text-foreground tracking-tight">لا توجد قوالب</h3>
                     <p className="text-muted-foreground text-base max-w-sm mb-10 font-medium leading-relaxed">
-                        ابدأ بإنشاء قالبك الأول للتواصل مع عملائك من خلال WhatsApp.
+                        ابدأ بمزامنة القوالب من Meta أو أنشئ قالبًا جديدًا.
                     </p>
                     <div className="flex gap-4">
                         <Button
@@ -285,7 +286,7 @@ export default function TemplatesPage() {
                             <CardContent className="px-6 pb-6 pt-0">
                                 <div className="bg-muted/10 rounded-[14px] p-4 mb-5 min-h-[100px] border border-border/30">
                                     <p className="text-sm font-bold text-muted-foreground/80 line-clamp-3 leading-relaxed">
-                                        {getBodyText(template.components) || template.content || "لا يوجد محتوى نصي"}
+                                        {getBodyText(template.components) || template.content || 'لا يوجد محتوى'}
                                     </p>
                                 </div>
 
@@ -323,7 +324,7 @@ export default function TemplatesPage() {
                                 </div>
                                 <div className="flex-1">
                                     <div className="text-sm font-semibold truncate">{previewTemplate.name}</div>
-                                    <div className="text-[10px] opacity-80">Business Account</div>
+                                    <div className="text-[10px] opacity-80">حساب الأعمال</div>
                                 </div>
                             </div>
 
@@ -334,7 +335,7 @@ export default function TemplatesPage() {
                                     <div className="space-y-2">
                                         <div className="bg-white dark:bg-[#202c33] p-2 rounded-lg rounded-tl-none shadow-sm max-w-[90%]">
                                             <p className="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap">
-                                                {previewTemplate.components?.find((c: any) => c.type === "BODY")?.text || "Carousel Message"}
+                                                {previewTemplate.components?.find((c: any) => c.type === "BODY")?.text || 'هذا هو نص الجسم الرئيسي للقالب.'}
                                             </p>
                                         </div>
                                         <div className="flex overflow-x-auto gap-2 pb-2 -mx-3 px-3 scrollbar-hide">
@@ -390,7 +391,7 @@ export default function TemplatesPage() {
 
                                             {/* Body */}
                                             <p className="text-sm leading-relaxed text-gray-800 dark:text-gray-100 whitespace-pre-wrap">
-                                                {previewTemplate.components?.find((c: any) => c.type === "BODY")?.text || previewTemplate.content || "لا يوجد محتوى"}
+                                                {previewTemplate.components?.find((c: any) => c.type === "BODY")?.text || previewTemplate.content || 'لا يوجد محتوى'}
                                             </p>
 
                                             {/* Footer */}
@@ -429,21 +430,20 @@ export default function TemplatesPage() {
             <Dialog open={!!deleteTemplateData} onOpenChange={(open) => !open && setDeleteTemplateData(null)}>
                 <DialogContent className="max-w-sm rounded-2xl">
                     <DialogHeader>
-                        <DialogTitle>حذف القالب</DialogTitle>
+                        <DialogTitle>تأكيد الحذف</DialogTitle>
                     </DialogHeader>
                     {deleteTemplateData && (
                         <div className="space-y-4">
                             <div className="bg-destructive/10 p-4 rounded-xl flex items-start gap-3">
                                 <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
                                 <p className="text-sm text-destructive-foreground">
-                                    هل أنت متأكد من حذف القالب <strong>&quot;{deleteTemplateData.name}&quot;</strong>؟
-                                    سيتم حذفه من حساب Meta أيضاً ولا يمكن التراجع عن هذا الإجراء.
+                                    هل أنت متأكد أنك تريد حذف القالب "{deleteTemplateData.name}"؟ لا يمكن التراجع عن هذا الإجراء.
                                 </p>
                             </div>
                             <div className="flex gap-3 justify-end">
                                 <Button variant="outline" onClick={() => setDeleteTemplateData(null)} className="rounded-xl">إلغاء</Button>
                                 <Button variant="destructive" onClick={handleDelete} disabled={isDeleting} className="rounded-xl">
-                                    {isDeleting ? "جاري الحذف..." : "تأكيد الحذف"}
+                                    {isDeleting ? 'جاري الحذف...' : 'تأكيد الحذف'}
                                 </Button>
                             </div>
                         </div>

@@ -13,35 +13,37 @@ export const getConfig = query({
         isActive: false, // Default off for free plan
       };
     }
-    
+
     const organizationId = user.currentOrganizationId;
     const organization = await ctx.db.get(organizationId);
-    
+
     // Get AI config
     const config = await ctx.db
       .query("ai_configs")
       .withIndex("by_org", (q) => q.eq("organizationId", organizationId))
       .first();
-    
+
     // Get user settings for AI auto response preference
     const userSettings = await ctx.db
       .query("userSettings")
-      .withIndex("by_user_org", (q) => 
+      .withIndex("by_user_org", (q) =>
         q.eq("userId", args.userId).eq("organizationId", organizationId)
       )
       .first();
-    
+
     // Determine plan-based default
     const plan = organization?.subscriptionPlan || "free";
     const planBasedDefault = plan === "free" || plan === "startup" ? false : true;
-    
+
     // Use user setting if exists, otherwise use plan-based default
-    const isActive = userSettings?.aiAutoResponseEnabled ?? 
-                     (config?.isActive ?? planBasedDefault);
-    
+    const isActive = userSettings?.aiAutoResponseEnabled ??
+      (config?.isActive ?? planBasedDefault);
+
     return {
       systemPrompt: config?.systemPrompt || "You are a helpful sales assistant for a store. You can search for products and help customers find what they need. Answer concisely.",
       model: config?.model || "arcee-ai/trinity-mini:free",
+      tools: config?.tools || ["salla", "handoff", "media", "orders"],
+      activePhoneNumbers: config?.activePhoneNumbers || [],
       isActive: isActive,
     };
   },
@@ -53,6 +55,8 @@ export const updateConfig = mutation({
     systemPrompt: v.string(),
     model: v.string(),
     isActive: v.boolean(),
+    tools: v.optional(v.array(v.string())),
+    activePhoneNumbers: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     // Get user's current organization
@@ -71,6 +75,8 @@ export const updateConfig = mutation({
         systemPrompt: args.systemPrompt,
         model: args.model,
         isActive: args.isActive,
+        tools: args.tools,
+        activePhoneNumbers: args.activePhoneNumbers,
         updatedAt: Date.now(),
       });
     } else {
@@ -80,6 +86,8 @@ export const updateConfig = mutation({
         systemPrompt: args.systemPrompt,
         model: args.model,
         isActive: args.isActive,
+        tools: args.tools,
+        activePhoneNumbers: args.activePhoneNumbers,
         updatedAt: Date.now(),
       });
     }
@@ -87,11 +95,11 @@ export const updateConfig = mutation({
 });
 
 export const getInternalConfig = query({
-    args: { organizationId: v.id("organizations") }, // Organization-scoped
-    handler: async (ctx, args) => {
-        return await ctx.db
-          .query("ai_configs")
-          .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
-          .first();
-    }
+  args: { organizationId: v.id("organizations") }, // Organization-scoped
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("ai_configs")
+      .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+      .first();
+  }
 });

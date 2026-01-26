@@ -152,19 +152,19 @@ export default function CampaignsPage() {
   }
 
   return (
-    <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto" dir="rtl">
+    <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black tracking-tight text-foreground">الحملات التسويقية</h1>
-          <p className="text-base text-muted-foreground font-medium">أداة احترافية لإدارة وتوسيع نطاق تواصلك عبر WhatsApp</p>
+          <h1 className="text-3xl font-black tracking-tight text-foreground">{"الحملات"}</h1>
+          <p className="text-base text-muted-foreground font-medium">{"إدارة وتتبع حملاتك التسويقية"}</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="bg-muted/30 p-1 rounded-[14px] flex items-center border border-border/50">
             <Tabs value={view} onValueChange={(v) => setView(v as "list" | "calendar")}>
               <TabsList className="bg-transparent p-0 gap-1">
-                <TabsTrigger value="list" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">قائمة</TabsTrigger>
-                <TabsTrigger value="calendar" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">تقويم</TabsTrigger>
+                <TabsTrigger value="list" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">{"قائمة"}</TabsTrigger>
+                <TabsTrigger value="calendar" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">{"تقويم"}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -172,7 +172,7 @@ export default function CampaignsPage() {
           <Link href="/campaigns/new">
             <Button className="gap-2 bg-primary hover:bg-primary/95 text-white rounded-[14px] h-12 px-8 font-black shadow-none border-none">
               <Plus className="h-5 w-5" />
-              حملة جديدة
+              {"حملة جديدة"}
             </Button>
           </Link>
         </div>
@@ -183,13 +183,13 @@ export default function CampaignsPage() {
         {[
           { title: "إجمالي الحملات", value: stats.total, icon: MessageSquare, color: "text-primary/70 bg-primary/5" },
           {
-            title: "رسائل مرسلة",
+            title: "رسائل مُرسلة",
             value: stats.sent.toLocaleString(),
             icon: CheckCircle2,
             color: "text-success/70 bg-success/5",
           },
           {
-            title: "معدل الوصول",
+            title: "معدل التسليم",
             value: `${stats.deliveredRate}%`,
             icon: Users,
             color: "text-blue-500/70 bg-blue-500/5",
@@ -231,7 +231,7 @@ export default function CampaignsPage() {
               <div className="relative w-full sm:max-w-md group">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
-                  placeholder="بحث في الحملات..."
+                  placeholder={"البحث عن حملة..."}
                   className="pl-4 pr-12 bg-muted/20 border-border/50 rounded-[14px] h-12 font-bold text-base focus:ring-primary/20 transition-all"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -240,7 +240,7 @@ export default function CampaignsPage() {
 
               <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground bg-muted/10 px-4 py-2 rounded-full border border-border/30">
                 <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                {campaigns?.length || 0} حملة مسجلة
+                {`${campaigns?.length || 0} حملة`}
               </div>
             </div>
 
@@ -255,14 +255,14 @@ export default function CampaignsPage() {
                 <div className="w-24 h-24 bg-primary/5 rounded-[28px] flex items-center justify-center mb-6 border-2 border-primary/10">
                   <MessageSquare className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-2xl font-black mb-3 text-foreground tracking-tight">ابدأ حملتك الأولى</h3>
+                <h3 className="text-2xl font-black mb-3 text-foreground tracking-tight">{"لا توجد حملات بعد"}</h3>
                 <p className="text-muted-foreground text-base max-w-sm mb-8 font-medium leading-relaxed">
-                  حول التواصل مع عملائك إلى تجربة ذكية ومؤثرة من خلال قوالب WhatsApp المعتمدة.
+                  {"ابدأ بإنشاء حملتك الأولى وأرسل رسائلك إلى جمهورك."}
                 </p>
                 <Link href="/campaigns/new">
                   <Button size="lg" className="rounded-[16px] px-10 h-12 font-black text-lg shadow-none gap-2">
                     <Plus className="h-5 w-5" />
-                    إنشاء أول حملة
+                    {"إنشاء حملة جديدة"}
                   </Button>
                 </Link>
               </div>

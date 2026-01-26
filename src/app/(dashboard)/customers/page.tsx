@@ -43,7 +43,7 @@ export default function CustomersPage() {
   }, [contacts, searchQuery, selectedTag])
 
   return (
-    <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto" dir="rtl">
+    <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-1">
@@ -51,7 +51,7 @@ export default function CustomersPage() {
             <Users className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-black tracking-tight text-foreground">العملاء</h1>
           </div>
-          <p className="text-base text-muted-foreground font-medium">إدارة جهات الاتصال والوسوم وبدء المحادثات</p>
+          <p className="text-base text-muted-foreground font-medium">إدارة جهات الاتصال الخاصة بك وتتبع تفاعلات العملاء.</p>
         </div>
 
         <CustomersHeader
@@ -70,7 +70,7 @@ export default function CustomersPage() {
             <div className="space-y-1">
               <CardTitle className="text-xl font-black">قائمة العملاء</CardTitle>
               <CardDescription className="font-bold uppercase tracking-widest text-[10px]">
-                إجمالي: {contacts ? contacts.length : 0} جهة اتصال
+                إجمالي العملاء: {contacts ? contacts.length : 0}
               </CardDescription>
             </div>
           </div>
@@ -82,7 +82,7 @@ export default function CustomersPage() {
           {!contacts ? (
             <div className="py-20 text-center flex flex-col items-center gap-4">
               <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-              <p className="font-bold text-muted-foreground">جاري تحميل البيانات...</p>
+              <p className="font-bold text-muted-foreground">جارٍ التحميل...</p>
             </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">

@@ -25,13 +25,14 @@ import {
     Link2,
     ShoppingBag,
     Info,
-    } from "lucide-react"
+} from "lucide-react"
+
 
 export default function ProductsPage() {
     const { userId } = useUserContext();
     const { currentOrganization } = useOrganizationContext();
     const organizationId = currentOrganization?._id;
-    
+
     const connection = useQuery(
         api.salla.getConnection,
         organizationId ? { organizationId } : userId ? { userId } : "skip"
@@ -70,11 +71,11 @@ export default function ProductsPage() {
             setIsLoading(true)
             try {
                 if (!userId) throw new Error("User not authenticated");
-                const result = await fetchProducts({ 
-                    userId, 
+                const result = await fetchProducts({
+                    userId,
                     organizationId,
-                    page: 1, 
-                    perPage: 50 
+                    page: 1,
+                    perPage: 50
                 })
                 if (result.connected) {
                     setProducts(result.products)
@@ -92,11 +93,11 @@ export default function ProductsPage() {
         try {
             const nextPage = page + 1
             if (!userId) throw new Error("User not authenticated");
-            const result = await fetchProducts({ 
-                userId, 
+            const result = await fetchProducts({
+                userId,
                 organizationId,
-                page: nextPage, 
-                perPage: 50 
+                page: nextPage,
+                perPage: 50
             })
             if (result.connected) {
                 setProducts(prev => [...prev, ...result.products])
@@ -138,14 +139,14 @@ export default function ProductsPage() {
                 <div className="w-20 h-20 rounded-full bg-[#004D3D]/10 flex items-center justify-center mb-6">
                     <ShoppingBag className="h-10 w-10 text-[#004D3D]" />
                 </div>
-                <h2 className="text-xl font-bold mb-2">لم يتم ربط متجر سلة</h2>
+                <h2 className="text-xl font-bold mb-2">متجر سلة غير متصل</h2>
                 <p className="text-muted-foreground mb-6 max-w-sm">
-                    قم بربط متجرك على سلة لعرض المنتجات واستخدامها في قوالب واتساب
+                    يرجى ربط متجرك في سلة للبدء في استيراد المنتجات وإرسالها لعملائك.
                 </p>
                 <Link href="/integrations">
                     <Button className="gap-2 bg-[#004D3D] hover:bg-[#003D2D]">
                         <Link2 className="h-4 w-4" />
-                        ربط متجر سلة
+                        الذهاب للتكاملات
                     </Button>
                 </Link>
             </div>
@@ -161,9 +162,9 @@ export default function ProductsPage() {
                         <ShoppingBag className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">منتجات سلة</h1>
+                        <h1 className="text-2xl font-bold text-foreground">المنتجات</h1>
                         <p className="text-muted-foreground text-sm">
-                            متصل بـ {connection.storeName || "متجر سلة"}
+                            متصل بـ {connection.storeName || "المتجر"}
                         </p>
                     </div>
                 </div>
@@ -194,9 +195,9 @@ export default function ProductsPage() {
                         <ShoppingBag className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">منتجات سلة</h1>
+                        <h1 className="text-2xl font-bold text-foreground">المنتجات</h1>
                         <p className="text-muted-foreground text-sm">
-                            {connection.storeName || "متجر سلة"} • {products.length} منتج
+                            {connection.storeName || "Store"} • عدد المنتجات: {products.length}
                         </p>
                     </div>
                 </div>
@@ -216,7 +217,7 @@ export default function ProductsPage() {
                 <div className="relative flex-1">
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="بحث بالاسم أو SKU..."
+                        placeholder="البحث عن منتج..."
                         className="pr-10 h-11"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -235,7 +236,7 @@ export default function ProductsPage() {
                 <Card className="border-dashed shadow-none">
                     <CardContent className="py-12 text-center">
                         <Package className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                        <p className="text-muted-foreground">لا توجد منتجات</p>
+                        <p className="text-muted-foreground">لا توجد منتجات لعرضها.</p>
                     </CardContent>
                 </Card>
             ) : (
@@ -260,7 +261,7 @@ export default function ProductsPage() {
                                 )}
                                 {!product.inStock && (
                                     <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                                        <Badge variant="destructive">نفد من المخزون</Badge>
+                                        <Badge variant="destructive">نفدت الكمية</Badge>
                                     </div>
                                 )}
                             </div>
@@ -290,7 +291,7 @@ export default function ProductsPage() {
                     <DialogHeader>
                         <DialogTitle>نظرة سريعة</DialogTitle>
                         <DialogDescription>
-                            تفاصيل المنتج الأساسية
+                            تفاصيل المنتج
                         </DialogDescription>
                     </DialogHeader>
 
@@ -329,7 +330,7 @@ export default function ProductsPage() {
                             {/* Status */}
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <span className={`w-2 h-2 rounded-full ${selectedProduct.inStock ? 'bg-success' : 'bg-destructive'}`} />
-                                {selectedProduct.inStock ? `متوفر (${selectedProduct.stock} قطعة)` : 'غير متوفر'}
+                                {selectedProduct.inStock ? `متوفر: ${selectedProduct.stock}` : 'نفدت الكمية'}
                             </div>
 
                             {/* Action Buttons */}
@@ -337,7 +338,7 @@ export default function ProductsPage() {
                                 <Link href={`/products/${selectedProduct.id}`} className="w-full">
                                     <Button className="w-full gap-2 bg-[#004D3D] hover:bg-[#003D2D]">
                                         <Info className="h-4 w-4" />
-                                        عرض التفاصيل الكاملة
+                                        عرض التفاصيل
                                     </Button>
                                 </Link>
                                 <Button className="w-full gap-2 bg-[#004D3D] hover:bg-[#003D2D]" asChild>

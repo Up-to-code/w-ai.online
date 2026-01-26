@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect, lazy, Suspense } from "react"
-import { useRouter } from "next/navigation"
 import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { motion } from "framer-motion"
 import Image from "next/image"
 import {
@@ -61,6 +62,11 @@ const ChatShowcase = lazy(() =>
     default: mod.ChatShowcase,
   }))
 )
+const ReportsShowcase = lazy(() =>
+  import("@/components/landing/showcase/ReportsShowcase").then((mod) => ({
+    default: mod.ReportsShowcase,
+  }))
+)
 
 // Number formatting utility
 function formatNumber(num: number): string {
@@ -108,16 +114,15 @@ function AnimatedFormattedNumber({ value, duration = 2000, className = "" }: { v
 
 export default function LandingPage() {
   const { isLoading, isAuthenticated } = useUserContext()
-  const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
 
   const publicStats = useQuery(api.publicStats.getPublicStats)
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push("/dashboard")
+      window.location.href = "/dashboard"
     }
-  }, [isLoading, isAuthenticated, router])
+  }, [isLoading, isAuthenticated])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -131,37 +136,54 @@ export default function LandingPage() {
 
   const pricingPlans = [
     {
-      name: "مجاني",
+      name: "الخطة المجانية",
       price: 0,
-      description: "للمتاجر الصغيرة والمبتدئين",
-      features: ["1,000 رسالة/شهر", "بوت ذكي أساسي", "إدارة حملات بسيطة", "دعم فني عبر البريد"],
+      description: "ابدأ رحلة الأتمتة مجاناً وجرب القوة الحقيقية",
+      features: [
+        "ربط رقم واتساب واحد",
+        "100 محادثة شهرياً",
+        "أدوات الأتمتة الأساسية",
+        "دعم عبر البريد"
+      ],
       highlight: false
     },
     {
-      name: "الأكثر شعبية",
+      name: "خطة المحترفين",
       price: 199,
-      description: "للأعمال المتنامية",
-      features: ["50,000 رسالة/شهر", "ذكاء اصطناعي متطور", "حملات غير محدودة", "ربط مع سلة وزد", "دعم فني مباشر"],
+      description: "الخيار المثالي للشركات المتوسطة والنمو السريع",
+      features: [
+        "كل مميزات الخطة المجانية",
+        "محادثات غير محدودة",
+        "ذكاء اصطناعي متقدم",
+        "ربط مباشر مع متجر سلة",
+        "دعم فني مخصص"
+      ],
       highlight: true
     },
     {
-      name: "مؤسسات",
+      name: "خطة الشركات",
       price: 999,
-      description: "للشركات الكبرى",
-      features: ["رسائل لا محدودة", "مدير حساب خاص", "API مخصص", "تخصيص كامل للنظام", "اتفاقية مستوى الخدمة"],
+      description: "حلول مخصصة للشركات الكبيرة والمتطلبات العالية",
+      features: [
+        "كل مميزات خطة المحترفين",
+        "ربط عدة أرقام واتساب",
+        "لوحة تحكم خاصة للفرق",
+        "أولوية في الدعم الفني",
+        "تدريب مخصص للفريق"
+      ],
       highlight: false
     }
   ]
 
   const faqs = [
-    { question: "هل أحتاج لبطاقة ائتمان للتجربة؟", answer: "لا، يمكنك البدء بالتجربة المجانية لمدة 14 يوم بدون أي التزامات." },
-    { question: "هل يمكنني ربط رقمي الحالي؟", answer: "نعم، يمكنك تحويل رقمك الحالي إلى واتساب للأعمال API بسهولة عبر منصتنا." },
-    { question: "ماذا يحدث بعد انتهاء التجربة؟", answer: "يمكنك اختيار الباقة المناسبة لك أو البقاء على الباقة المجانية المحدودة." },
-    { question: "هل تدعمون الربط مع سلة؟", answer: "نعم، لدينا تكامل كامل ومباشر مع منصة سلة لمزامنة الطلبات والعملاء." }
+    { question: "هل أحتاج لخبرة برمجية لاستخدام المنصة؟", answer: "لا أبداً! المنصة مصممة لتكون سهلة الاستخدام وبدون كود. يمكنك إعداد جميع الأتمتة والحملات من خلال واجهة مرئية بسيطة." },
+    { question: "هل يمكنني ربط متجري على سلة؟", answer: "نعم، المنصة تدعم الربط المباشر والسهل مع متاجر سلة لمزامنة المنتجات، الطلبات، والسلات المتروكة تلقائياً." },
+    { question: "كيف يساعد الذكاء الاصطناعي في عملي؟", answer: "يقوم الذكاء الاصطناعي بالرد على استفسارات العملاء المتكررة، تلخيص المحادثات، واقتراح ردود احترافية لموظفيك لتوفير الوقت." },
+    { question: "هل استخدام واتساب للأعمال آمن؟", answer: "نعم، نحن نستخدم واجهة ربط واتساب الرسمية (Meta WhatsApp Business API) لضمان أعلى مستويات الأمان وحماية رقمك من الحظر." }
   ]
 
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground overflow-x-hidden" dir="rtl">
+    <div className="min-h-screen bg-background font-sans text-foreground overflow-x-hidden">
 
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <motion.div
@@ -199,7 +221,7 @@ export default function LandingPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </span>
-            منصة متكاملة: حملات، محادثات، وأتمتة 🚀
+            تحديثات جديدة للمنصة
           </motion.div>
 
           <motion.h1
@@ -208,8 +230,8 @@ export default function LandingPage() {
             transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="text-6xl md:text-8xl lg:text-[100px] font-black tracking-tight leading-[1.05] tracking-[-0.04em]"
           >
-            جهاز تحكم <br className="hidden md:block" />
-            <span className="text-secondary-foreground underline decoration-wavy decoration-primary/20 underline-offset-[12px]">تجارتك الذكية</span>
+            ضاعف مبيعاتك وأتمت عملك <br className="hidden md:block" />
+            <span className="text-secondary-foreground underline decoration-wavy decoration-primary/20 underline-offset-[12px]">عبر واتساب بالذكاء الاصطناعي</span>
           </motion.h1>
 
           <motion.p
@@ -218,7 +240,7 @@ export default function LandingPage() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-xl md:text-2xl text-muted-foreground/80 max-w-3xl mx-auto leading-relaxed font-medium"
           >
-            نحن لا نقدم مجرد شات بوت. نحن نبني لك فريق مبيعات ذكي يعمل 24/7 داخل واتساب، يربط مخزونك، يدير حملاتك، ويضاعف أرباحك.
+            المنصة الأقوى لربط متجر سلة مع واتساب. أتمت المحادثات، استرجع السلات المتروكة، وأطلق حملات تسويقية ذكية تزيد من أرباحك وتوفر وقت فريقك.
           </motion.p>
 
           <motion.div
@@ -227,8 +249,8 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
           >
-            <Button size="lg" onClick={() => router.push("/dashboard")} className="h-14 px-8 rounded-[16px] text-lg font-bold w-full sm:w-auto transition-all hover:-translate-y-1">
-              ابدأ تجربتك المجانية
+            <Button size="lg" onClick={() => window.location.href = "/dashboard"} className="h-14 px-8 rounded-[16px] text-lg font-bold w-full sm:w-auto transition-all hover:-translate-y-1">
+              ابدأ الآن مجاناً
               <ArrowRight className="mr-2 h-5 w-5" />
             </Button>
           </motion.div>
@@ -252,11 +274,11 @@ export default function LandingPage() {
       <section className="py-32 bg-background relative overflow-hidden section-divider">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight">نظرة شاملة من الداخل</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">أدوات احترافية مصممة لنمو تجارتك دون تعقيد</p>
+            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight">كل ما تحتاجه للنمو الرقمي</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">أدوات احترافية مصممة خصيصاً لملاك المتاجر الإلكترونية</p>
           </div>
 
-          <Tabs defaultValue="automation" className="w-full max-w-6xl mx-auto" dir="rtl">
+          <Tabs defaultValue="automation" className="w-full max-w-6xl mx-auto">
             <TabsList className="grid w-full grid-cols-3 h-auto p-1.5 bg-muted/40 rounded-[24px] mb-16 border border-border/10">
               <TabsTrigger value="automation" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
                 <LayoutDashboard className="h-5 w-5" />
@@ -270,6 +292,11 @@ export default function LandingPage() {
                 <MessageSquare className="h-5 w-5" />
                 المحادثات
               </TabsTrigger>
+              <TabsTrigger value="reports" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
+                <TrendingUp className="h-5 w-5" />
+                التقارير
+              </TabsTrigger>
+              stone
             </TabsList>
 
             <TabsContent value="automation" className="mt-0">
@@ -337,6 +364,27 @@ export default function LandingPage() {
                 </div>
               </Suspense>
             </TabsContent>
+            <TabsContent value="reports" className="mt-0">
+              <Suspense fallback={<div className="h-[500px] w-full bg-muted animate-pulse rounded-[24px]" />}>
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                  <div className="relative order-2 md:order-1">
+                    <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full opacity-20 pointer-events-none" />
+                    <ReportsShowcase />
+                  </div>
+                  <div className="space-y-6 order-1 md:order-2">
+                    <h3 className="text-3xl font-black">تقارير ذكية لاتخاذ قرارات أفضل</h3>
+                    <p className="text-lg text-muted-foreground leading-relaxed">
+                      اعرف أي الحملات تحقق أعلى المبيعات، ومعدلات التحويل، وأداء موظفيك. بياناتك أصبحت محركاً لنمو عملك.
+                    </p>
+                    <ul className="space-y-3">
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> تحليل سلات الشراء المتروكة</li>
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> مراقبة أداء الفريق لحظة بلحظة</li>
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> تقارير يومية تصل لهاتفك</li>
+                    </ul>
+                  </div>
+                </div>
+              </Suspense>
+            </TabsContent>
           </Tabs>
         </div>
       </section>
@@ -386,21 +434,21 @@ export default function LandingPage() {
                 <div className="text-4xl md:text-5xl font-black">
                   {publicStats ? <AnimatedFormattedNumber value={publicStats.totalMessages} /> : "--"}
                 </div>
-                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">رسالة تم معالجتها</div>
+                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">رسالة معالجة</div>
               </div>
               <div className="text-center space-y-2">
                 <div className="text-4xl md:text-5xl font-black">
                   {publicStats ? <AnimatedFormattedNumber value={publicStats.activeOrganizations || 1500} /> : "--"}
                 </div>
-                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">متجر يثق بنا</div>
+                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">متجر إلكتروني</div>
               </div>
               <div className="text-center space-y-2">
                 <div className="text-4xl md:text-5xl font-black">50M+</div>
-                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">إشعار مُرسل</div>
+                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">تنبيه يومي</div>
               </div>
               <div className="text-center space-y-2">
                 <div className="text-4xl md:text-5xl font-black">99.9%</div>
-                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">جاهزية النظام</div>
+                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">جاهزية الخدمة</div>
               </div>
             </div>
           </div>
@@ -411,8 +459,8 @@ export default function LandingPage() {
       <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <h2 className="text-4xl font-black">خطط أسعار بسيطة وشفافة</h2>
-            <p className="text-xl text-muted-foreground">ابدأ مجاناً، وادفع فقط عندما تنمو.</p>
+            <h2 className="text-4xl font-black">أسعار تنافسية لجميع الأحجام</h2>
+            <p className="text-xl text-muted-foreground">اختر الخطة المناسبة لنمو تجارتك</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -439,7 +487,7 @@ export default function LandingPage() {
                   <h3 className="text-xl font-bold">{plan.name}</h3>
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-black">{plan.price}</span>
-                    <span className="text-muted-foreground font-medium">ريال / شهرياً</span>
+                    <span className="text-muted-foreground font-medium">/ شهرياً</span>
                   </div>
                   <p className="text-sm text-muted-foreground">{plan.description}</p>
                 </div>
@@ -467,10 +515,55 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Lead Form Section */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-primary/5 -skew-y-3 origin-right scale-110 pointer-events-none" />
+        <div className="container mx-auto px-4 max-w-5xl relative z-10">
+          <div className="bg-white dark:bg-slate-900 rounded-[40px] border border-border/50 shadow-2xl p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center">
+            <div className="flex-1 space-y-6">
+              <h2 className="text-4xl md:text-5xl font-black leading-tight">جاهز لنقل متجرك للمستوى التالي؟</h2>
+              <p className="text-xl text-muted-foreground leading-relaxed">سجل بياناتك الآن للحصول على استشارة مجانية وفترة تجريبية كاملة المميزات بكافة خصائص المنصة.</p>
+              <div className="flex flex-col gap-4 pt-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0"><Check className="w-6 h-6" /></div>
+                  <span className="text-lg font-bold">إعداد وتفعيل خلال 5 دقائق</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0"><Check className="w-6 h-6" /></div>
+                  <span className="text-lg font-bold">تجربة مجانية للمحترفين</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 w-full">
+              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-black text-muted-foreground mr-1">الاسم الكامل</Label>
+                  <Input id="name" placeholder="أحمد محمد..." className="h-14 rounded-[16px] border-2 border-border/50 font-bold bg-muted/5 focus:ring-primary/20" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-black text-muted-foreground mr-1">البريد الإلكتروني</Label>
+                  <Input id="email" type="email" placeholder="ahmed@example.com" className="h-14 rounded-[16px] border-2 border-border/50 font-bold bg-muted/5 focus:ring-primary/20" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="store" className="text-sm font-black text-muted-foreground mr-1">رابط متجر سلة</Label>
+                  <Input id="store" placeholder="salla.sa/mystore" className="h-14 rounded-[16px] border-2 border-border/50 font-bold bg-muted/5 focus:ring-primary/20" />
+                </div>
+                <Button className="w-full h-16 rounded-[20px] text-xl font-black shadow-lg shadow-primary/20 mt-4 group">
+                  تواصل معنا الآن
+                  <ArrowRight className="mr-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                </Button>
+                <p className="text-[10px] text-center text-muted-foreground font-medium mt-4">بضغطك على الزر، أنت توافق على شروط الخدمة وسياسة الخصوصية.</p>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section */}
       <section className="py-24">
         <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-3xl font-black text-center mb-12">أسئلة شائعة</h2>
+          <h2 className="text-3xl font-black text-center mb-12">الأسئلة الشائعة</h2>
           <Accordion type="single" collapsible className="w-full space-y-4">
             {faqs.map((faq, i) => (
               <AccordionItem key={i} value={`item-${i}`} className="border rounded-[16px] px-6 data-[state=open]:bg-muted/30">

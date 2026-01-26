@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react"
 // Redirect to /dashboard which is the actual dashboard page
 export default function DashboardRootRedirect() {
     const router = useRouter()
-    
+
     useEffect(() => {
         router.replace("/dashboard")
     }, [router])

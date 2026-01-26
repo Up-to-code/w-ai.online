@@ -104,7 +104,7 @@ export default function NewCampaignPage() {
     ]
 
     return (
-        <div className="p-4 sm:p-8 space-y-10 animate-in fade-in duration-500 max-w-[1400px] mx-auto" dir="rtl">
+        <div className="p-4 sm:p-8 space-y-10 animate-in fade-in duration-500 max-w-[1400px] mx-auto">
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-6 border-b border-border/30 pb-8">
                 <div className="flex items-center gap-6">
