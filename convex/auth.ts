@@ -18,6 +18,10 @@ export const authKit = new AuthKit<DataModel>(components.workOSAuthKit, {
   additionalEventTypes: ["session.created", "session.revoked"],
 });
 
+// Export the action handler for OAuth callbacks
+// This is required by authKit.registerRoutes() to handle OAuth code exchange
+export const authKitAction = authKit.action;
+
 // Sync WorkOS users to our users table
 export const { authKitEvent } = authKit.events({
   "user.created": async (ctx, event) => {
