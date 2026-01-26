@@ -76,28 +76,31 @@ export const getCurrentUser = query({
 
 // Ensure user exists in database (create if missing)
 // This fixes race conditions where WorkOS user exists but app user record doesn't
+// Note: Mutations can't use authKit.getAuthUser(), so we pass authId from client
 export const ensureUserExists = mutation({
-  args: {},
-  handler: async (ctx, _args) => {
-    const authUser = await authKit.getAuthUser(ctx);
-    if (!authUser) {
-      throw new Error("Not authenticated");
-    }
-    
+  args: {
+    authId: v.string(),
+    email: v.optional(v.string()),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    phone: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
     // Check if user already exists
     let user = await ctx.db
       .query("users")
-      .withIndex("by_auth_id", (q) => q.eq("authId", authUser.id))
+      .withIndex("by_auth_id", (q) => q.eq("authId", args.authId))
       .first();
     
     // Create user if doesn't exist
     if (!user) {
+      const name = `${args.firstName || ''} ${args.lastName || ''}`.trim() || args.email || "User";
       const userId = await ctx.db.insert("users", {
-        authId: authUser.id,
-        email: authUser.email,
-        name: `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() || authUser.email || "User",
+        authId: args.authId,
+        email: args.email,
+        name: name,
         role: "user",
-        phone: (authUser as any).phoneNumber || (authUser as any).phone || undefined,
+        phone: args.phone,
       });
       user = await ctx.db.get(userId);
     }

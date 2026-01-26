@@ -173,7 +173,13 @@ export function CreateOrganizationModal({
       if (workOSUser && appUser === null) {
         console.log("[CreateOrganizationModal] WorkOS user exists but app user is null - creating user on-demand");
         try {
-          const createdUser = await ensureUserExists({});
+          const createdUser = await ensureUserExists({
+            authId: workOSUser.id,
+            email: workOSUser.email,
+            firstName: workOSUser.firstName,
+            lastName: workOSUser.lastName,
+            phone: (workOSUser as any).phoneNumber || (workOSUser as any).phone,
+          });
           console.log("[CreateOrganizationModal] User created successfully", createdUser);
           
           if (!createdUser || !createdUser._id) {
