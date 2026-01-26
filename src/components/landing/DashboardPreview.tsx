@@ -38,7 +38,7 @@ export function DashboardPreview() {
 
                 {/* Stats Column */}
                 <div className="space-y-4">
-                    <div className="bg-card p-6 rounded-[24px] border border-border shadow-sm">
+                    <div className="bg-card p-6 rounded-[24px] border border-border">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-3 rounded-[16px] bg-primary/10 text-primary">
                                 <Users className="h-6 w-6" />
@@ -54,7 +54,7 @@ export function DashboardPreview() {
                         </div>
                     </div>
 
-                    <div className="bg-card p-6 rounded-[24px] border border-border shadow-sm">
+                    <div className="bg-card p-6 rounded-[24px] border border-border">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-3 rounded-[16px] bg-secondary text-secondary-foreground">
                                 <Send className="h-6 w-6" />
@@ -74,7 +74,7 @@ export function DashboardPreview() {
                 {/* Main Content Column */}
                 <div className="md:col-span-2 space-y-6">
                     {/* Active Workflow Card */}
-                    <div className="bg-card p-6 rounded-[24px] border border-border shadow-sm">
+                    <div className="bg-card p-6 rounded-[24px] border border-border">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-[12px] bg-primary flex items-center justify-center text-white">
@@ -111,7 +111,7 @@ export function DashboardPreview() {
                     </div>
 
                     {/* Recent Activity List */}
-                    <div className="bg-card p-6 rounded-[24px] border border-border shadow-sm">
+                    <div className="bg-card p-6 rounded-[24px] border border-border">
                         <h4 className="font-bold text-lg mb-4">النشاط الأخير</h4>
                         <div className="space-y-4">
                             {[1, 2].map((_, i) => (

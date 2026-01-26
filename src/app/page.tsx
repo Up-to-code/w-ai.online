@@ -6,6 +6,7 @@ import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
+import Image from "next/image"
 import {
   MessageSquare,
   ArrowRight,
@@ -21,6 +22,8 @@ import {
   Megaphone,
   Workflow
 } from "lucide-react"
+import { Navbar } from "@/components/layout/Navbar"
+import { Footer } from "@/components/layout/Footer"
 import { useUserContext } from "@/hooks/useUserContext"
 import {
   Accordion,
@@ -181,19 +184,7 @@ export default function LandingPage() {
         />
       </div>
 
-      {/* Header */}
-      <header className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled ? "bg-background/80 backdrop-blur-md border-b border-border/50 py-3" : "bg-transparent py-5"
-      )}>
-        <div className="container mx-auto px-4 md:px-6 flex justify-between items-center">
-          <div className="text-2xl font-black tracking-tighter text-primary">w-ai.online</div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => router.push("/login")} className="hidden md:inline-flex font-bold rounded-[12px]">تسجيل دخول</Button>
-            <Button onClick={() => router.push("/dashboard")} className="font-bold rounded-[12px] px-6 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all">ابدأ الآن مجاناً</Button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       {/* Hero Section */}
       <section className="relative z-10 pt-32 pb-20 md:pt-48 md:pb-32 px-4">
@@ -236,7 +227,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
           >
-            <Button size="lg" onClick={() => router.push("/dashboard")} className="h-14 px-8 rounded-[16px] text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 w-full sm:w-auto transition-all hover:-translate-y-1">
+            <Button size="lg" onClick={() => router.push("/dashboard")} className="h-14 px-8 rounded-[16px] text-lg font-bold w-full sm:w-auto transition-all hover:-translate-y-1">
               ابدأ تجربتك المجانية
               <ArrowRight className="mr-2 h-5 w-5" />
             </Button>
@@ -267,15 +258,15 @@ export default function LandingPage() {
 
           <Tabs defaultValue="automation" className="w-full max-w-6xl mx-auto" dir="rtl">
             <TabsList className="grid w-full grid-cols-3 h-auto p-1.5 bg-muted/40 rounded-[24px] mb-16 border border-border/10">
-              <TabsTrigger value="automation" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-lg py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
+              <TabsTrigger value="automation" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
                 <LayoutDashboard className="h-5 w-5" />
                 الأتمتة
               </TabsTrigger>
-              <TabsTrigger value="campaigns" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-lg py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
+              <TabsTrigger value="campaigns" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
                 <Megaphone className="h-5 w-5" />
                 الحملات
               </TabsTrigger>
-              <TabsTrigger value="chat" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-lg py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
+              <TabsTrigger value="chat" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
                 <MessageSquare className="h-5 w-5" />
                 المحادثات
               </TabsTrigger>
@@ -386,7 +377,7 @@ export default function LandingPage() {
       {/* Stats Cards - Glassmorphism */}
       <section className="py-20 bg-background relative z-10">
         <div className="container mx-auto px-4">
-          <div className="p-4 md:p-8 rounded-[32px] bg-primary text-white shadow-2xl overflow-hidden relative">
+          <div className="p-4 md:p-8 rounded-[32px] bg-primary text-white overflow-hidden relative">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px] pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-[80px] pointer-events-none" />
 
@@ -435,13 +426,13 @@ export default function LandingPage() {
                 className={cn(
                   "relative p-8 rounded-[24px] border",
                   plan.highlight
-                    ? "bg-white dark:bg-slate-900 border-primary shadow-2xl scale-105 z-10"
+                    ? "bg-white dark:bg-slate-900 border-primary scale-105 z-10"
                     : "bg-background border-border hover:border-primary/50 transition-colors"
                 )}
               >
                 {plan.highlight && (
                   <div className="absolute top-0 inset-x-0 -mt-4 text-center">
-                    <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">الأكثر اختياراً</span>
+                    <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">الأكثر اختياراً</span>
                   </div>
                 )}
                 <div className="text-center space-y-4 mb-8">
@@ -493,21 +484,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 border-t border-border bg-muted/10">
-        <div className="container mx-auto px-4 text-center space-y-8">
-          <div className="text-2xl font-black text-primary">w-ai.online</div>
-          <div className="flex justify-center gap-8 text-muted-foreground font-medium">
-            <a href="#" className="hover:text-primary transition-colors">عن المنصة</a>
-            <a href="#" className="hover:text-primary transition-colors">الأسعار</a>
-            <a href="#" className="hover:text-primary transition-colors">الشروط والأحكام</a>
-            <a href="#" className="hover:text-primary transition-colors">اتصل بنا</a>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            © 2026 جميع الحقوق محفوظة
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

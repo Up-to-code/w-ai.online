@@ -18,7 +18,7 @@ export function AutomationShowcase() {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="w-full bg-card p-4 rounded-[16px] border-2 border-primary/20 shadow-lg flex items-center gap-4 relative z-20"
+                    className="w-full bg-card p-4 rounded-[16px] border-2 border-primary/20 flex items-center gap-4 relative z-20"
                 >
                     <div className="h-10 w-10 rounded-[12px] bg-primary/10 flex items-center justify-center text-primary">
                         <MessageSquare className="h-5 w-5" />
@@ -46,7 +46,7 @@ export function AutomationShowcase() {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.3 }}
-                    className="w-full bg-card p-4 rounded-[16px] border border-border shadow-sm flex items-center gap-4 relative"
+                    className="w-full bg-card p-4 rounded-[16px] border border-border flex items-center gap-4 relative"
                 >
                     <div className="h-10 w-10 rounded-[12px] bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
                         <Send className="h-5 w-5" />
@@ -73,7 +73,7 @@ export function AutomationShowcase() {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.5 }}
-                    className="w-full bg-card p-4 rounded-[16px] border border-border shadow-sm flex items-center gap-4 relative"
+                    className="w-full bg-card p-4 rounded-[16px] border border-border flex items-center gap-4 relative"
                 >
                     <div className="h-10 w-10 rounded-[12px] bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
                         <Clock className="h-5 w-5" />

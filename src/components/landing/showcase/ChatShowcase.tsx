@@ -11,7 +11,7 @@ export function ChatShowcase() {
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] mask-gradient" />
 
             {/* Chat Interface Container */}
-            <div className="w-full max-w-md bg-card rounded-[24px] border border-border/60 shadow-xl overflow-hidden flex flex-col h-[400px] relative z-10">
+            <div className="w-full max-w-md bg-card rounded-[24px] border border-border/60 overflow-hidden flex flex-col h-[400px] relative z-10">
 
                 {/* Chat Header */}
                 <div className="p-4 border-b border-border/50 flex justify-between items-center bg-muted/30">
@@ -48,7 +48,7 @@ export function ChatShowcase() {
                         transition={{ duration: 0.3 }}
                         className="flex justify-end"
                     >
-                        <div className="bg-primary text-white p-3 rounded-[16px] rounded-tl-sm max-w-[80%] shadow-sm">
+                        <div className="bg-primary text-white p-3 rounded-[16px] rounded-tl-sm max-w-[80%]">
                             <p className="text-sm">مرحباً! هل العرض الخاص بالصيف لا يزال سارياً؟</p>
                             <span className="text-[10px] opacity-70 mt-1 block text-left">10:30 ص</span>
                         </div>
@@ -80,7 +80,7 @@ export function ChatShowcase() {
                         transition={{ duration: 0.3, delay: 0.8 }}
                         className="flex justify-end"
                     >
-                        <div className="bg-primary text-white p-3 rounded-[16px] rounded-tl-sm max-w-[80%] shadow-sm">
+                        <div className="bg-primary text-white p-3 rounded-[16px] rounded-tl-sm max-w-[80%]">
                             <p className="text-sm">رائع! أريد طلب المنتج الآن.</p>
                             <span className="text-[10px] opacity-70 mt-1 block text-left">10:31 ص</span>
                         </div>
