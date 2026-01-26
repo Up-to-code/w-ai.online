@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { logger } from "@/lib/logger"
 import { useState, useRef } from "react"
 import { ProductPicker } from "./ProductPicker"
 import { useUserQuery } from "@/hooks/useUserQuery"
@@ -88,7 +89,7 @@ export function ChatInput({ chatId }: ChatInputProps) {
         storageId: fileDoc.storageId
       })
     } catch (error) {
-      console.error("Failed to send file", error)
+      logger.error("Failed to send file", error)
     } finally {
       setIsSending(false)
     }
@@ -132,7 +133,7 @@ export function ChatInput({ chatId }: ChatInputProps) {
 
       if (imageInputRef.current) imageInputRef.current.value = ""
     } catch (error) {
-      console.error("Failed to send image", error)
+      logger.error("Failed to send image", error)
     } finally {
       setIsSending(false)
     }
@@ -175,7 +176,7 @@ export function ChatInput({ chatId }: ChatInputProps) {
       setIsRecording(false)
 
     } catch (error) {
-      console.error("Failed to send voice note", error)
+      logger.error("Failed to send voice note", error)
     } finally {
       setIsSending(false)
     }
@@ -222,7 +223,7 @@ export function ChatInput({ chatId }: ChatInputProps) {
       })
 
     } catch (error) {
-      console.error("Failed to send product", error)
+      logger.error("Failed to send product", error)
     } finally {
       setIsSending(false)
     }

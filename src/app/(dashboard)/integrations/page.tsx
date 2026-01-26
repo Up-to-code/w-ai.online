@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { logger } from "@/lib/logger"
 import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
 import { useAction, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
@@ -62,7 +63,7 @@ export default function IntegrationsPage() {
         const redirectUri = process.env.NEXT_PUBLIC_SALLA_REDIRECT_URI
 
         if (!clientId || !redirectUri) {
-            console.error("Missing Salla OAuth configuration")
+            logger.error("Missing Salla OAuth configuration")
             setIsConnecting(false)
             return
         }
@@ -86,7 +87,7 @@ export default function IntegrationsPage() {
             })
             window.location.reload()
         } catch (err: any) {
-            console.error("Disconnect Salla error:", err)
+            logger.error("Disconnect Salla error:", err)
             setIsConnecting(false)
         }
     }
@@ -101,7 +102,7 @@ export default function IntegrationsPage() {
             })
             window.location.reload()
         } catch (err: any) {
-            console.error("Disconnect error:", err)
+            logger.error("Disconnect error:", err)
             setIsConnecting(false)
         }
     }

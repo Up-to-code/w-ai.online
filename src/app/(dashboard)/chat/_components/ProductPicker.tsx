@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useAction } from "convex/react"
+import { logger } from "@/lib/logger"
 import { api } from "@convex/_generated/api"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -48,7 +49,7 @@ export function ProductPicker({ onSelect, trigger }: ProductPickerProps) {
             }
             setHasLoaded(true)
         } catch (error) {
-            console.error("Failed to load products", error)
+            logger.error("Failed to load products", error)
         } finally {
             setIsLoading(false)
         }
