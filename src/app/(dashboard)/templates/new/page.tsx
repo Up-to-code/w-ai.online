@@ -43,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { logger } from "@/lib/logger"
 
 import { ProductPicker } from "../../chat/_components/ProductPicker"
 
@@ -209,7 +210,7 @@ export default function NewTemplatePage() {
             }
 
         } catch (error) {
-            console.error("Upload failed:", error)
+            logger.error("Upload failed:", error)
             alert("فشل رفع الملف. تأكد من إعدادات Meta.")
         } finally {
             setUploadingMedia(false)
@@ -293,7 +294,7 @@ export default function NewTemplatePage() {
             }
 
         } catch (error) {
-            console.error("Salla import failed:", error)
+            logger.error("Salla import failed:", error)
             alert("فشل استيراد الصورة من سلة. " + String(error))
         } finally {
             setUploadingMedia(false)
@@ -582,7 +583,7 @@ export default function NewTemplatePage() {
 
             router.push("/templates?success=true")
         } catch (error) {
-            console.error("Failed to create template:", error)
+            logger.error("Failed to create template:", error)
             alert("فشل إنشاء القالب. " + String(error))
         } finally {
             setIsSubmitting(false)

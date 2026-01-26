@@ -37,6 +37,7 @@ import {
     Users,
     UserPlus
 } from "lucide-react"
+import { logger } from "@/lib/logger"
 
 const TRIGGERS = [
     { value: "new_message", label: "رسالة جديدة", icon: MessageSquare },
@@ -107,7 +108,7 @@ export default function WorkflowsPage() {
             setIsCreateOpen(false)
             resetForm()
         } catch (error) {
-            console.error("Failed to save workflow", error)
+            logger.error("Failed to save workflow", error)
         }
     }
 

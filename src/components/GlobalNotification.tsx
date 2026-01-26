@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageSquare, Bell } from "lucide-react"
 import { useUserContext } from "@/hooks/useUserContext"
+import { logger } from "@/lib/logger"
 import { useOrganizationContext } from "@/hooks/useOrganizationContext"
 
 const SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"
@@ -137,7 +138,7 @@ export function GlobalNotification() {
         // 4. Play Sound & Show Notification
         // Play sound only if sound is enabled
         if (userSettings?.soundEnabled) {
-            audioRef.current?.play().catch(e => console.error("Audio play failed", e))
+            audioRef.current?.play().catch(e => logger.error("Audio play failed", e))
         }
 
         toast.custom((t) => (

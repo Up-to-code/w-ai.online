@@ -34,6 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { CronScheduler } from "@/components/CronScheduler"
 import { SchedulePicker } from "@/components/SchedulePicker"
 import { TemplatePreview } from "@/components/TemplatePreview"
+import { logger } from "@/lib/logger"
 import type { Id } from "@convex/_generated/dataModel"
 
 export default function NewCampaignPage() {
@@ -87,7 +88,7 @@ export default function NewCampaignPage() {
             })
             router.push("/campaigns?success=true")
         } catch (error) {
-            console.error("Failed to create campaign:", error)
+            logger.error("Failed to create campaign:", error)
         } finally {
             setIsSubmitting(false)
         }

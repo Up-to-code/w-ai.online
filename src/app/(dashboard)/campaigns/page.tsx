@@ -36,6 +36,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { logger } from "@/lib/logger"
 
 export default function CampaignsPage() {
   const campaigns = useUserQuery(api.campaigns.list, {})
@@ -153,7 +154,7 @@ export default function CampaignsPage() {
     try {
       await removeCampaign({ id })
     } catch (e) {
-      console.error("Failed to delete campaign", e)
+      logger.error("Failed to delete campaign", e)
     }
   }
 

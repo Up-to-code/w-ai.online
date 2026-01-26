@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import { Bot, Save, RefreshCw, Play, MessageSquare } from "lucide-react"
+import { logger } from "@/lib/logger"
 
 export default function AiSettingsPage() {
     const config = useUserQuery(api.ai_config.getConfig, {})
@@ -47,7 +48,7 @@ export default function AiSettingsPage() {
             toast.success("تم حفظ إعدادات الذكاء الاصطناعي بنجاح")
         } catch (error) {
             toast.error("فشل في حفظ الإعدادات")
-            console.error(error)
+            logger.error("Failed to save AI config:", error)
         }
     }
 

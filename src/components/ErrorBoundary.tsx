@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import { track404Error } from "@/lib/error-handling"
+import { logger } from "@/lib/logger"
 
 interface ErrorBoundaryProps {
   children: React.ReactNode
@@ -14,11 +15,11 @@ function ErrorBoundaryInner({ children }: ErrorBoundaryProps) {
 
   useEffect(() => {
     const handleError = (event: ErrorEvent) => {
-      console.error("Client-side error:", event.error)
+      logger.error("Client-side error:", event.error)
     }
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error("Unhandled promise rejection:", event.reason)
+      logger.error("Unhandled promise rejection:", event.reason)
     }
 
     window.addEventListener("error", handleError)

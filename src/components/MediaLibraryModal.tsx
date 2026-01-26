@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, Upload, File, Image as ImageIcon, Film, Music, CheckCircle2 } from "lucide-react"
+import { logger } from "@/lib/logger"
 
 interface MediaLibraryModalProps {
     children: React.ReactNode
@@ -61,7 +62,7 @@ export function MediaLibraryModal({ children, onSelect, allowedTypes }: MediaLib
             // Reset
             if (fileInputRef.current) fileInputRef.current.value = ""
         } catch (error) {
-            console.error("Upload failed", error)
+            logger.error("Upload failed", error)
         } finally {
             setUploading(false)
         }

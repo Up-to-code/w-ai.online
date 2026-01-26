@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { Trash2, Mic, SendHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { logger } from "@/lib/logger"
 
 interface AudioRecorderProps {
     onRecordingComplete: (file: File) => void
@@ -44,7 +45,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
             }, 1000)
 
         } catch (error) {
-            console.error("Microphone access denied", error)
+            logger.error("Microphone access denied", error)
             onCancel()
         }
     }
@@ -66,7 +67,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
         // Small delay to ensure the last chunk is captured
         setTimeout(() => {
             if (chunks.current.length === 0) {
-                console.error("No audio chunks recorded")
+                logger.error("No audio chunks recorded")
                 onCancel()
                 return
             }

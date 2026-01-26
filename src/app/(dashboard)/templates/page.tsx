@@ -37,6 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { logger } from "@/lib/logger"
 
 export default function TemplatesPage() {
     const { userId } = useUserContext();
@@ -64,7 +65,7 @@ export default function TemplatesPage() {
             const count = await syncFromMeta({ userId })
             showToast("success", `تم مزامنة ${count} قالب بنجاح`)
         } catch (error) {
-            console.error("Sync failed:", error)
+            logger.error("Sync failed:", error)
             showToast("error", "فشل في المزامنة")
         } finally {
             setIsSyncing(false)
@@ -80,7 +81,7 @@ export default function TemplatesPage() {
             showToast("success", `تم حذف القالب "${deleteTemplateData.name}" بنجاح`)
             setDeleteTemplateData(null)
         } catch (error: any) {
-            console.error("Delete failed:", error)
+            logger.error("Delete failed:", error)
             const errorMessage = error.message || String(error)
             if (errorMessage.includes("Permission") || errorMessage.includes("(#100)")) {
                  showToast("error", "فشل الحذف: لا تملك صلاحيات كافية في حساب Meta")

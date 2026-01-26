@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation"
+import { logger } from "@/lib/logger"
 
 // This component can be used for dynamic 404 pages
 // For example, when a resource is not found in the database
@@ -25,5 +26,5 @@ export function isValidRoute(pathname: string): boolean {
 export function track404Error(pathname: string, referrer?: string) {
   // In a real application, you'd integrate with your analytics service
   // Example: analytics.track('404_error', { pathname, referrer, timestamp: Date.now() })
-  console.warn(`404 Error tracked: ${pathname}`, { referrer, timestamp: Date.now() })
+  logger.warn(`404 Error tracked: ${pathname}`, { referrer, timestamp: Date.now() })
 }

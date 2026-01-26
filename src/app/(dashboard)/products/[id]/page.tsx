@@ -19,6 +19,7 @@ import {
     Share2
 } from "lucide-react"
 import Link from "next/link"
+import { logger } from "@/lib/logger"
 
 export default function ProductDetailsPage() {
     const params = useParams()
@@ -37,7 +38,7 @@ export default function ProductDetailsPage() {
                 setProduct(data)
                 setSelectedImage(data.image)
             } catch (error) {
-                console.error("Failed to fetch product:", error)
+                logger.error("Failed to fetch product:", error)
             } finally {
                 setIsLoading(false)
             }

@@ -6,6 +6,7 @@ import { api } from "@convex/_generated/api"
 import { MessageList } from "./MessageList"
 import { ConversationHeader } from "./ConversationHeader"
 import { ChatInput } from "./ChatInput"
+import { logger } from "@/lib/logger"
 
 interface ChatWindowProps {
   chatId: string
@@ -17,7 +18,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
   // Instant Read Effect
   useEffect(() => {
     if (chatId) {
-      markAsRead({ chatId: chatId as any }).catch(console.error)
+      markAsRead({ chatId: chatId as any }).catch((e) => logger.error("markAsRead failed", e))
     }
   }, [chatId, markAsRead])
 
