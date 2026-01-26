@@ -4,7 +4,7 @@ export default authkitMiddleware({
   redirectUri: process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || 'http://localhost:3000/callback',
   middlewareAuth: {
     enabled: true,
-    unauthenticatedPaths: ['/', '/callback'],
+    unauthenticatedPaths: ['/', '/callback', '/manifest.json'],
   },
 });
 
