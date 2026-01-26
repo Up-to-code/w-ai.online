@@ -64,16 +64,5 @@ convex/_generated/
 *.temp
 .cache/
 
-# Expo / React Native
-packages/mobile/.expo/
-packages/mobile/.expo-shared/
-packages/mobile/dist/
-packages/mobile/.eas/
-packages/mobile/.env.local
-packages/mobile/*.jks
-packages/mobile/*.p8
-packages/mobile/*.p12
-packages/mobile/*.key
-packages/mobile/*.mobileprovision
-packages/mobile/*.orig.*
-packages/mobile/web-build/
+# Expo / React Native - Mobile package excluded
+packages/mobile/
