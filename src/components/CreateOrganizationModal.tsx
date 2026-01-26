@@ -137,41 +137,106 @@ export function CreateOrganizationModal({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    // Prevent default form submission if event is provided
+    if (e) {
+      e.preventDefault();
+    }
+
+    console.log("[CreateOrganizationModal] handleSubmit called", {
+      userId,
+      name: formData.name,
+      slug: formData.slug,
+      isSubmitting,
+      slugError,
+      isCheckingSlug,
+      isSlugTaken,
+      isSlugAvailable,
+    });
+
     if (!userId) {
+      console.log("[CreateOrganizationModal] No userId");
       toast.error("يجب تسجيل الدخول أولاً");
       return;
     }
 
     if (!formData.name.trim()) {
+      console.log("[CreateOrganizationModal] Name is empty");
       toast.error("اسم المنظمة مطلوب");
       return;
     }
 
-    if (!validateSlug(formData.slug)) {
+    // Validate slug format and set error if invalid
+    // This will update slugError state if validation fails
+    const slugValid = validateSlug(formData.slug);
+    if (!slugValid) {
+      console.log("[CreateOrganizationModal] Slug validation failed", {
+        slug: formData.slug,
+        slugError,
+      });
+      // Error is already set by validateSlug, just return
+      return;
+    }
+
+    // Ensure slug format is valid (double-check)
+    if (!validateSlugFormat(formData.slug)) {
+      console.log("[CreateOrganizationModal] Slug format invalid");
+      setSlugError("يجب أن يحتوي المعرف على أحرف إنجليزية وأرقام فقط");
       return;
     }
 
     // Check if slug is taken (final check before submit)
     if (isSlugTaken) {
+      console.log("[CreateOrganizationModal] Slug is taken");
+      setSlugError("هذا المعرف مستخدم بالفعل");
       toast.error("هذا المعرف مستخدم بالفعل");
       return;
     }
 
     // If still checking, wait a bit
     if (isCheckingSlug) {
+      console.log("[CreateOrganizationModal] Still checking slug");
       toast.error("يرجى الانتظار حتى يتم التحقق من المعرف");
       return;
     }
 
+    // Additional check: if slug is not available and not taken, it might still be checking
+    // This can happen if debounce hasn't completed yet
+    if (
+      !isSlugAvailable &&
+      !isSlugTaken &&
+      formData.slug.trim().length > 0 &&
+      debouncedSlug !== formData.slug
+    ) {
+      console.log("[CreateOrganizationModal] Slug availability unknown - debounce not complete", {
+        slug: formData.slug,
+        debouncedSlug,
+      });
+      toast.error("يرجى الانتظار حتى يتم التحقق من المعرف");
+      return;
+    }
+
+    // Final check: slug must be confirmed available
+    if (!isSlugAvailable && formData.slug.trim().length > 0) {
+      console.log("[CreateOrganizationModal] Slug not confirmed available", {
+        isSlugAvailable,
+        isSlugTaken,
+        isCheckingSlug,
+        slugCheck,
+      });
+      toast.error("يرجى التأكد من أن المعرف متاح");
+      return;
+    }
+
+    console.log("[CreateOrganizationModal] Starting submission");
     setIsSubmitting(true);
     try {
-      await createOrganization({
+      const orgId = await createOrganization({
         userId,
         name: formData.name.trim(),
         slug: formData.slug.trim(),
       });
+      console.log("[CreateOrganizationModal] Organization created successfully", orgId);
       toast.success("تم إنشاء المنظمة بنجاح");
       setFormData({ name: "", slug: "" });
       setSlugError("");
@@ -183,6 +248,7 @@ export function CreateOrganizationModal({
         window.location.reload();
       }
     } catch (error: any) {
+      console.error("[CreateOrganizationModal] Error creating organization", error);
       // Handle specific error messages from backend
       const errorMessage = error?.message || "فشل إنشاء المنظمة";
       if (errorMessage.includes("المعرف مستخدم")) {
@@ -195,6 +261,14 @@ export function CreateOrganizationModal({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handler for button click (fallback if form submission doesn't work)
+  const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("[CreateOrganizationModal] Button clicked directly");
+    handleSubmit();
   };
 
   const handleChange = (field: string, value: string) => {
@@ -290,13 +364,19 @@ export function CreateOrganizationModal({
             )}
             <Button
               type="submit"
+              onClick={handleButtonClick}
               disabled={
                 isSubmitting ||
                 !formData.name.trim() ||
                 !formData.slug.trim() ||
                 !!slugError ||
                 isSlugTaken ||
-                isCheckingSlug
+                isCheckingSlug ||
+                // Disable if slug exists but we haven't confirmed it's available yet
+                // (debounce hasn't completed or query hasn't returned)
+                (formData.slug.trim().length > 0 &&
+                  debouncedSlug !== formData.slug &&
+                  validateSlugFormat(formData.slug))
               }
             >
               {isSubmitting ? (
