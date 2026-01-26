@@ -6,8 +6,8 @@ import { useUserContext } from "./useUserContext";
 import { useCallback } from "react";
 
 export function useOrganizationContext() {
-  const { userId, user } = useUserContext();
-  
+  const { userId, user, isLoading: isUserLoading } = useUserContext();
+
   // Get user's organizations
   const organizations = useQuery(
     api.organizations.getUserOrganizations,
@@ -41,17 +41,17 @@ export function useOrganizationContext() {
   const hasPermission = useCallback(
     (requiredRole: "owner" | "admin" | "agent" | "viewer") => {
       if (!userRole) return false;
-      
+
       const roleHierarchy: Record<string, number> = {
         owner: 4,
         admin: 3,
         agent: 2,
         viewer: 1,
       };
-      
+
       const userRoleLevel = roleHierarchy[userRole] || 0;
       const requiredRoleLevel = roleHierarchy[requiredRole] || 0;
-      
+
       return userRoleLevel >= requiredRoleLevel;
     },
     [userRole]
@@ -62,19 +62,20 @@ export function useOrganizationContext() {
   // - undefined: still loading (don't show modal)
   // - null: no organization (show modal)
   // - object: has organization (don't show modal)
-  const hasOrganization = currentOrganization !== null && 
+  const hasOrganization = currentOrganization !== null &&
     (currentOrganization !== undefined || (userId && organizations !== undefined && organizations.length > 0));
 
   // Fix isLoading to account for userId being undefined
   // Should be loading if:
-  // - userId is undefined (user context still loading)
-  // - OR userId exists but queries are still loading
-  const isLoading = !userId || (!!userId && (organizations === undefined || currentOrganization === undefined));
+  // - User context is still loading
+  // - OR userId exists (user loaded) but org queries are still loading
+  const isLoading = isUserLoading || (!!userId && (organizations === undefined || currentOrganization === undefined));
 
   // Add logging for debugging
   if (typeof window !== 'undefined') {
     console.log("[useOrganizationContext] State:", {
       userId,
+      isUserLoading,
       organizations: organizations?.length || 0,
       currentOrganization: currentOrganization ? "exists" : currentOrganization === null ? "null" : "undefined",
       hasOrganization,
