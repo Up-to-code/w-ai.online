@@ -11,9 +11,10 @@ const http = httpRouter();
 // It will redirect to the Next.js app URL configured in WorkOS dashboard
 authKit.registerRoutes(http);
 
-// Custom /callback route handler for WorkOS OAuth
-// WorkOS hosted pages redirect here, then we redirect to Next.js
-// Next.js middleware will handle the actual OAuth code exchange and session setup
+// Custom /callback route handler for WorkOS OAuth (legacy/Convex-first flow).
+// In production, OAuth should use the Next.js app as redirect_uri (e.g. https://www.w-ai.online/callback)
+// so WorkOS calls Next.js directly; this Convex route is not used in that setup.
+// When used: WorkOS -> Convex /callback -> redirect to Next.js /callback with code and state.
 http.route({
   path: "/callback",
   method: "GET",
