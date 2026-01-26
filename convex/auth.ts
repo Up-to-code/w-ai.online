@@ -6,6 +6,7 @@ import { PushNotifications } from "@convex-dev/expo-push-notifications";
 import { components } from "./_generated/api";
 import { AuthKit, type AuthFunctions } from "@convex-dev/workos-authkit";
 import type { DataModel } from "./_generated/dataModel";
+import { logger } from "./logger";
 
 const pushNotifications = new PushNotifications(components.pushNotifications);
 
@@ -90,7 +91,7 @@ export const sendOTP = mutation({
     }
 
     // 1. Generate 6 digit code
-    console.log(`[Auth] Generating OTP for raw input: "${args.phone}"`);
+    logger.debug(`[Auth] Generating OTP for raw input: "${args.phone}"`);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
@@ -107,16 +108,16 @@ export const sendOTP = mutation({
     }
 
     // 3. Send via WhatsApp
-    console.log(`[Auth] Attempting to schedule WhatsApp OTP for ${args.phone}...`);
+    logger.info(`[Auth] Attempting to schedule WhatsApp OTP for ${args.phone}...`);
     try {
       await ctx.scheduler.runAfter(0, api.whatsapp.sendMessage, {
         to: args.phone,
         type: "text",
         content: { body: `رمز التحقق الخاص بك لـ W-AI هو: ${code}` },
       });
-      console.log(`[Auth] WhatsApp OTP scheduled successfully for ${args.phone}`);
+      logger.info(`[Auth] WhatsApp OTP scheduled successfully for ${args.phone}`);
     } catch (err) {
-      console.error(`[Auth] FAILED to schedule WhatsApp OTP: ${err}`);
+      logger.error(`[Auth] FAILED to schedule WhatsApp OTP: ${err}`);
     }
 
     return { success: true, message: "تم إرسال رمز التحقق عبر واتساب" };

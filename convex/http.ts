@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { authKit } from "./auth";
+import { logger } from "./logger";
 
 const http = httpRouter();
 
@@ -24,7 +25,7 @@ http.route({
     const error = url.searchParams.get("error");
     const state = url.searchParams.get("state");
     
-    console.log(`[AuthKit Callback] Received: ${request.url}`);
+    logger.info(`[AuthKit Callback] Received: ${request.url}`);
     
     // Parse state to get return path (default to /dashboard)
     let returnPath = "/dashboard";
@@ -39,7 +40,7 @@ http.route({
           }
         }
       } catch (e) {
-        console.log("[AuthKit Callback] Could not parse state, using default path:", e);
+        logger.debug("[AuthKit Callback] Could not parse state, using default path:", e);
       }
     }
     
@@ -61,7 +62,7 @@ http.route({
     // Add returnPath to state or as separate parameter for Next.js
     // Next.js middleware will handle the OAuth code exchange
     const redirectUrl = nextJsUrl.toString();
-    console.log(`[AuthKit Callback] Redirecting to Next.js: ${redirectUrl}`);
+    logger.info(`[AuthKit Callback] Redirecting to Next.js: ${redirectUrl}`);
     return Response.redirect(redirectUrl, 302);
   }),
 });
@@ -85,7 +86,7 @@ http.route({
       // Check if it's a webhook slug (starts with wh_)
       if (identifier.startsWith("wh_")) {
         webhookSlug = identifier;
-        console.log(`[HTTP] Webhook verification with webhook slug: ${webhookSlug}`);
+        logger.debug(`[HTTP] Webhook verification with webhook slug: ${webhookSlug}`);
       } else {
         // Check if it looks like a Convex ID (starts with m, j, etc. and is alphanumeric)
         // Convex IDs typically start with a letter followed by alphanumeric characters
@@ -93,11 +94,11 @@ http.route({
         if (convexIdPattern.test(identifier) && identifier.length > 10) {
           // Likely a Convex userId
           webhookUserId = identifier;
-          console.log(`[HTTP] Webhook verification with userId: ${webhookUserId}`);
+          logger.debug(`[HTTP] Webhook verification with userId: ${webhookUserId}`);
         } else {
           // Treat as organization slug
           organizationSlug = identifier;
-          console.log(`[HTTP] Webhook verification with organization slug: ${organizationSlug}`);
+          logger.debug(`[HTTP] Webhook verification with organization slug: ${organizationSlug}`);
         }
       }
     }
@@ -106,7 +107,7 @@ http.route({
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    console.log(`[HTTP] Webhook verification request:`, {
+    logger.debug(`[HTTP] Webhook verification request:`, {
       path: url.pathname,
       mode,
       hasToken: !!token,
@@ -117,7 +118,7 @@ http.route({
     });
 
     if (!mode || !token || !challenge) {
-      console.error(`[HTTP] Missing required parameters:`, { mode, hasToken: !!token, hasChallenge: !!challenge });
+      logger.error(`[HTTP] Missing required parameters:`, { mode, hasToken: !!token, hasChallenge: !!challenge });
       return new Response("BadRequest: Missing hub.mode, hub.verify_token, or hub.challenge", { status: 400 });
     }
 
@@ -134,7 +135,7 @@ http.route({
       if (result.success) {
         // Webhook verification succeeded - it's already marked as verified in verifyWebhook action
         const identifier = organizationSlug || webhookSlug || webhookUserId || "default";
-        console.log(`[HTTP] ✓ Webhook verification successful for ${identifier}`);
+        logger.info(`[HTTP] ✓ Webhook verification successful for ${identifier}`);
         return new Response(result.challenge, { 
           status: 200,
           headers: {
@@ -143,12 +144,12 @@ http.route({
         });
       } else {
         const identifier = organizationSlug || webhookSlug || webhookUserId || "default";
-        console.error(`[HTTP] ✗ Webhook verification failed for ${identifier}`);
-        console.error(`[HTTP] Token received: ${token.substring(0, 10)}...`);
+        logger.error(`[HTTP] ✗ Webhook verification failed for ${identifier}`);
+        logger.debug(`[HTTP] Token received: ${token.substring(0, 10)}...`);
         return new Response("Forbidden: Verify token mismatch", { status: 403 });
       }
     } catch (error: any) {
-      console.error(`[HTTP] Error during webhook verification:`, error);
+      logger.error(`[HTTP] Error during webhook verification:`, error);
       return new Response(`Internal Server Error: ${error.message || "Unknown error"}`, { status: 500 });
     }
   }),
@@ -171,31 +172,31 @@ http.route({
       // Check if it's a webhook slug (starts with wh_)
       if (identifier.startsWith("wh_")) {
         webhookSlug = identifier;
-        console.log(`[HTTP] Webhook POST with webhook slug: ${webhookSlug}`);
+        logger.debug(`[HTTP] Webhook POST with webhook slug: ${webhookSlug}`);
       } else {
         // Check if it looks like a Convex ID (starts with m, j, etc. and is alphanumeric)
         const convexIdPattern = /^[a-z][a-z0-9]+$/i;
         if (convexIdPattern.test(identifier) && identifier.length > 10) {
           // Likely a Convex userId
           webhookUserId = identifier;
-          console.log(`[HTTP] Webhook POST with userId: ${webhookUserId}`);
+          logger.debug(`[HTTP] Webhook POST with userId: ${webhookUserId}`);
         } else {
           // Treat as organization slug
           organizationSlug = identifier;
-          console.log(`[HTTP] Webhook POST with organization slug: ${organizationSlug}`);
+          logger.debug(`[HTTP] Webhook POST with organization slug: ${organizationSlug}`);
         }
       }
     }
 
     const identifier = organizationSlug || webhookSlug || webhookUserId || "";
-    console.log(`[HTTP] Webhook received: ${request.method} ${request.url}${identifier ? ` (${identifier})` : ""}`);
+    logger.info(`[HTTP] Webhook received: ${request.method} ${request.url}${identifier ? ` (${identifier})` : ""}`);
 
     let body;
     try {
       body = await request.json();
-      console.log("[HTTP] Webhook Body:", JSON.stringify(body, null, 2));
+      logger.debug("[HTTP] Webhook Body:", JSON.stringify(body, null, 2));
     } catch (e) {
-      console.error("[HTTP] Failed to parse JSON:", e);
+      logger.error("[HTTP] Failed to parse JSON:", e);
       return new Response("Bad Request: Invalid JSON", { status: 400 });
     }
 
@@ -204,9 +205,9 @@ http.route({
     // Dispatch to internal mutation to handle async scheduling
     try {
       await ctx.runMutation(internal.whatsapp.dispatchWebhook, { body });
-      console.log("[HTTP] Webhook Dispatched Successfully");
+      logger.info("[HTTP] Webhook Dispatched Successfully");
     } catch (e) {
-      console.error("[HTTP] Dispatch Error:", e);
+      logger.error("[HTTP] Dispatch Error:", e);
       return new Response("Internal Server Error", { status: 500 });
     }
 
@@ -220,13 +221,13 @@ http.route({
   method: "GET",
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
-    console.log(`[Salla Callback] Received request: ${request.url}`);
+    logger.info(`[Salla Callback] Received request: ${request.url}`);
 
     const code = url.searchParams.get("code");
     const error = url.searchParams.get("error");
     const state = url.searchParams.get("state");
 
-    console.log(`[Salla Callback] Params - Code: ${code ? "Present" : "Missing"}, Error: ${error}, State: ${state}`);
+    logger.debug(`[Salla Callback] Params - Code: ${code ? "Present" : "Missing"}, Error: ${error}, State: ${state}`);
 
     // Handle errors from Salla
     if (error) {
@@ -270,7 +271,7 @@ http.route({
       const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || ""}/integrations?success=true`;
       return Response.redirect(redirectUrl, 302);
     } catch (err) {
-      console.error("Salla OAuth error:", err);
+      logger.error("Salla OAuth error:", err);
       const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || ""}/integrations?error=token_exchange_failed`;
       return Response.redirect(redirectUrl, 302);
     }

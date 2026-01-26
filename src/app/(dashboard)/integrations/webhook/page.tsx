@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAction, useMutation, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { useUserQuery } from "@/hooks/useUserQuery"
+import { logger } from "@/lib/logger"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -421,7 +422,7 @@ export default function WebhookConfigurationPage() {
             }
             return true
         } catch (err: any) {
-            console.error("Save Step 1 error:", err)
+            logger.error("Save Step 1 error:", err)
             const errorMessage = err?.message || "فشل التحقق من Access Token. يرجى المحاولة مرة أخرى."
             setError(errorMessage)
             toast.error(errorMessage)
@@ -476,7 +477,7 @@ export default function WebhookConfigurationPage() {
             toast.success("تم التحقق من App ID و Verify Token")
             return true
         } catch (err: any) {
-            console.error("Save Step 2 error:", err)
+            logger.error("Save Step 2 error:", err)
             const errorMessage = err?.message || "فشل حفظ البيانات. يرجى المحاولة مرة أخرى."
             setError(errorMessage)
             toast.error(errorMessage)
@@ -563,7 +564,7 @@ export default function WebhookConfigurationPage() {
                 setVerifyToken(vaultVerifyToken)
             }
 
-            console.log("[Webhook Save] Using verify token:", {
+                logger.debug("[Webhook Save] Using verify token:", {
                 fromVault: !!vaultVerifyToken,
                 fromState: !!stateVerifyToken,
                 finalToken: finalVerifyToken.substring(0, 10) + "...",
@@ -589,7 +590,7 @@ export default function WebhookConfigurationPage() {
                         })
                     }, 3, 1000)
                 } catch (connectError: any) {
-                console.error("Connect Meta error:", connectError)
+                logger.error("Connect Meta error:", connectError)
                 let connectErrorMessage = "فشل الاتصال بـ Meta. يرجى التحقق من بيانات API."
                 
                 if (connectError.message) {
@@ -630,7 +631,7 @@ export default function WebhookConfigurationPage() {
             } else if (isConnected && !accessToken.trim()) {
                 // In edit mode without new access token, just update webhook config
                 // Credentials remain unchanged
-                console.log("[Webhook Save] Edit mode: Keeping existing credentials, updating webhook config only")
+                logger.debug("[Webhook Save] Edit mode: Keeping existing credentials, updating webhook config only")
             }
 
             // 2. Create or update webhook configuration
@@ -663,7 +664,7 @@ export default function WebhookConfigurationPage() {
                     })
                 }
             } catch (webhookError: any) {
-                console.error("Webhook create/update error:", webhookError)
+                logger.error("Webhook create/update error:", webhookError)
                 let webhookErrorMessage = "فشل حفظ إعدادات Webhook."
                 
                 if (webhookError.message) {
@@ -686,15 +687,15 @@ export default function WebhookConfigurationPage() {
                     phoneNumberIds: phoneNumbers.map(p => p.phoneNumberId),
                 })
             } catch (lookupError: any) {
-                console.error("Lookup update error:", lookupError)
+                logger.error("Lookup update error:", lookupError)
                 // Non-critical error, log but don't fail the whole operation
-                console.warn("Failed to update phone number lookup table, but webhook was saved successfully")
+                logger.warn("Failed to update phone number lookup table, but webhook was saved successfully")
             }
 
             toast.success("تم حفظ الإعدادات بنجاح!")
             setCurrentStep(4) // Move to webhook URL step
         } catch (err: any) {
-            console.error("Save error:", err)
+            logger.error("Save error:", err)
             
             // Handle specific error types with user-friendly messages
             let errorMessage = "فشل حفظ الإعدادات. يرجى التحقق من البيانات المدخلة."

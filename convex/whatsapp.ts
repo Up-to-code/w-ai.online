@@ -8,6 +8,7 @@ import {
   WhatsAppAPIError,
   createErrorReport,
 } from "./errorUtils";
+import { logger } from "./logger";
 
 const WHATSAPP_API_URL = "https://graph.facebook.com/v21.0";
 
@@ -30,7 +31,7 @@ export const sendMessage = action({
     const phoneId = envVars.META_PHONE_NUMBER_ID;
 
     if (!accessToken || !phoneId) {
-      console.error("[WhatsApp] Missing Meta tokens for organization", args.organizationId);
+      logger.error("[WhatsApp] Missing Meta tokens for organization", args.organizationId);
       throw new Error("Meta WhatsApp not connected. Please connect your Meta account in Settings.");
     }
 
@@ -40,7 +41,7 @@ export const sendMessage = action({
     });
 
     if (!verificationStatus.isVerified) {
-      console.error("[WhatsApp] Webhook not verified for organization", args.organizationId);
+      logger.error("[WhatsApp] Webhook not verified for organization", args.organizationId);
       throw new Error("Webhook غير مُتحقق منه. يرجى التحقق من Webhook في Meta Developer Console أولاً. اذهب إلى الإعدادات > التكاملات > Webhook للتكوين.");
     }
 
@@ -50,11 +51,11 @@ export const sendMessage = action({
       recipient = validateAndCleanPhoneNumber(args.to);
     } catch (err) {
       const error = err as Error;
-      console.error("[WhatsApp] Phone number validation failed:", error.message);
+      logger.error("[WhatsApp] Phone number validation failed:", error.message);
       throw error;
     }
 
-    console.log(`[WhatsApp] Preparing to send to cleaned recipient: ${recipient} (original was ${args.to})`);
+    logger.debug(`[WhatsApp] Preparing to send to cleaned recipient: ${recipient} (original was ${args.to})`);
 
     const payload: any = {
       messaging_product: "whatsapp",
@@ -63,8 +64,8 @@ export const sendMessage = action({
       [args.type]: args.content,
     };
 
-    console.log(`[WhatsApp] Sending payload to ${recipient} via ${WHATSAPP_API_URL}/${phoneId}/messages`);
-    console.log(`[WhatsApp] Payload:`, JSON.stringify(payload, null, 2));
+    logger.debug(`[WhatsApp] Sending payload to ${recipient} via ${WHATSAPP_API_URL}/${phoneId}/messages`);
+    logger.debug(`[WhatsApp] Payload:`, JSON.stringify(payload, null, 2));
 
     try {
       const response = await fetch(`${WHATSAPP_API_URL}/${phoneId}/messages`, {
@@ -76,7 +77,7 @@ export const sendMessage = action({
         body: JSON.stringify(payload),
       });
 
-      console.log(`[WhatsApp] Meta API Response Status: ${response.status} ${response.statusText}`);
+      logger.debug(`[WhatsApp] Meta API Response Status: ${response.status} ${response.statusText}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -84,7 +85,7 @@ export const sendMessage = action({
         const errorMessage = data.error?.message || "Unknown error";
         const errorCategory = categorizeWhatsAppError(errorCode, errorMessage);
 
-        console.error(
+        logger.error(
           `[WhatsApp] API Error (${errorCategory.category}):`,
           JSON.stringify(data),
           `Retryable: ${errorCategory.retryable}`
@@ -99,7 +100,7 @@ export const sendMessage = action({
           errorForReport,
           { contact: args.to, phone: recipient }
         );
-        console.error("[WhatsApp] Error Report:", JSON.stringify(errorReport, null, 2));
+        logger.debug("[WhatsApp] Error Report:", JSON.stringify(errorReport, null, 2));
 
         // Create user-friendly error message for specific error codes
         let userFriendlyMessage = errorMessage;
@@ -139,7 +140,7 @@ export const sendMessage = action({
         throw error;
       }
 
-      console.log("[WhatsApp] Send Success:", JSON.stringify(data));
+      logger.info("[WhatsApp] Send Success:", JSON.stringify(data));
 
       // Link Meta ID to Internal Message
       if (args.messageId && data.messages?.[0]?.id) {
@@ -148,14 +149,14 @@ export const sendMessage = action({
           messageId: args.messageId,
           metaMessageId: wamid,
         });
-        console.log(`[WhatsApp] Linked local msg ${args.messageId} to wamid ${wamid}`);
+        logger.debug(`[WhatsApp] Linked local msg ${args.messageId} to wamid ${wamid}`);
       }
 
       return data;
     } catch (error) {
       // Log structured error info
       const err = error as Error & { code?: number; category?: string; retryable?: boolean };
-      console.error("[WhatsApp] Exception during send:", {
+      logger.error("[WhatsApp] Exception during send:", {
         message: err.message,
         code: err.code,
         category: err.category,
@@ -193,7 +194,7 @@ export const createTemplate = action({
       components: args.components,
     };
 
-    console.log("Creating Template Payload:", JSON.stringify(payload, null, 2));
+    logger.debug("Creating Template Payload:", JSON.stringify(payload, null, 2));
 
     const response = await fetch(`${WHATSAPP_API_URL}/${wabaId}/message_templates`, {
       method: "POST",
@@ -207,7 +208,7 @@ export const createTemplate = action({
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("WhatsApp Template Creation Error:", data);
+      logger.error("WhatsApp Template Creation Error:", data);
       throw new Error(`WhatsApp API Error: ${data.error?.message || "Unknown error"}`);
     }
 
@@ -254,7 +255,7 @@ export const fetchTemplates = action({
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("WhatsApp Fetch Templates Error:", data);
+      logger.error("WhatsApp Fetch Templates Error:", data);
       throw new Error(`WhatsApp API Error: ${data.error?.message || "Unknown error"}`);
     }
 
@@ -274,7 +275,7 @@ export const markAsRead = action({
     const phoneId = envVars.META_PHONE_NUMBER_ID;
 
     if (!accessToken || !phoneId) {
-      console.error("Missing Meta tokens for organization", args.organizationId);
+      logger.error("Missing Meta tokens for organization", args.organizationId);
       return;
     }
 
@@ -292,7 +293,7 @@ export const markAsRead = action({
         }),
       });
     } catch (error) {
-      console.error("Failed to mark message as read:", error);
+      logger.error("Failed to mark message as read:", error);
     }
   },
 });
@@ -322,7 +323,7 @@ export const getTemplate = action({
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("WhatsApp Get Template Error:", data);
+      logger.error("WhatsApp Get Template Error:", data);
       throw new Error(`WhatsApp API Error: ${data.error?.message || "Unknown error"}`);
     }
 
@@ -355,7 +356,7 @@ export const deleteTemplate = action({
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("WhatsApp Delete Template Error:", data);
+      logger.error("WhatsApp Delete Template Error:", data);
       throw new Error(`WhatsApp API Error: ${data.error?.message || "Unknown error"}`);
     }
 
@@ -403,7 +404,7 @@ export const uploadMedia = action({
 
     const data = await response.json();
     if (!response.ok) {
-      console.error("Media Upload Error:", data);
+      logger.error("Media Upload Error:", data);
       
       // Handle specific error codes
       const errorCode = data.error?.code;
@@ -414,7 +415,7 @@ export const uploadMedia = action({
         const error = new Error("WhatsApp API Authentication Error: Invalid or expired access token. Please check your WHATSAPP_ACCESS_TOKEN environment variable.") as Error & { code?: number; category?: string };
         error.code = 190;
         error.category = "AUTH_ERROR";
-        console.error("[WhatsApp] Authentication failed - check access token validity");
+        logger.error("[WhatsApp] Authentication failed - check access token validity");
         throw error;
       } else if (errorCode === 131047) {
         // Media type not supported
@@ -465,12 +466,12 @@ export const uploadMediaFromUrl = action({
       throw new Error("Meta WhatsApp not connected. Please connect your Meta account in Settings.");
     }
 
-    console.log(`[uploadMediaFromUrl] Fetching media from: ${args.url.substring(0, 80)}...`);
+    logger.debug(`[uploadMediaFromUrl] Fetching media from: ${args.url.substring(0, 80)}...`);
 
     // 1. Fetch the file from external URL
     const fileRes = await fetch(args.url);
     if (!fileRes.ok) {
-      console.error(`[uploadMediaFromUrl] Failed to fetch: ${fileRes.status} ${fileRes.statusText}`);
+      logger.error(`[uploadMediaFromUrl] Failed to fetch: ${fileRes.status} ${fileRes.statusText}`);
       throw new Error(`Failed to fetch media from URL: ${fileRes.status} ${fileRes.statusText}`);
     }
 
@@ -479,7 +480,7 @@ export const uploadMediaFromUrl = action({
                         fileRes.headers.get("content-type") || 
                         (args.type === "video" ? "video/mp4" : "image/jpeg");
 
-    console.log(`[uploadMediaFromUrl] Uploading ${contentType}, size: ${blob.size} bytes`);
+    logger.debug(`[uploadMediaFromUrl] Uploading ${contentType}, size: ${blob.size} bytes`);
 
     // 2. Prepare Form Data for WhatsApp Media API
     const formData = new FormData();
@@ -496,11 +497,11 @@ export const uploadMediaFromUrl = action({
 
     const data = await response.json();
     if (!response.ok) {
-      console.error("[uploadMediaFromUrl] Upload Error:", data);
+      logger.error("[uploadMediaFromUrl] Upload Error:", data);
       throw new Error(data.error?.message || "Failed to upload media to WhatsApp");
     }
 
-    console.log(`[uploadMediaFromUrl] Success! Media ID: ${data.id}`);
+    logger.debug(`[uploadMediaFromUrl] Success! Media ID: ${data.id}`);
     return data.id; // WhatsApp Media ID to use in send requests
   }
 });
@@ -529,7 +530,7 @@ export const uploadTemplateMedia = action({
     const blob = await fileRes.blob();
     const fileLength = blob.size;
 
-    console.log(`[UploadTemplateMedia] Starting upload for ${args.type}, size: ${fileLength}`);
+    logger.debug(`[UploadTemplateMedia] Starting upload for ${args.type}, size: ${fileLength}`);
 
     // 2. Start Upload Session
     const sessionUrl = `https://graph.facebook.com/v21.0/${appId}/uploads?file_length=${fileLength}&file_type=${args.type}`;
@@ -544,12 +545,12 @@ export const uploadTemplateMedia = action({
     const sessionData = await sessionRes.json();
 
     if (!sessionRes.ok) {
-      console.error("Failed to create upload session:", sessionData);
+      logger.error("Failed to create upload session:", sessionData);
       throw new Error(sessionData.error?.message || "Failed to create upload session");
     }
 
     const uploadId = sessionData.id;
-    console.log(`[UploadTemplateMedia] Session created: ${uploadId}`);
+    logger.debug(`[UploadTemplateMedia] Session created: ${uploadId}`);
 
     // 3. Upload File Content
     const uploadUrl = `https://graph.facebook.com/v21.0/${uploadId}`;
@@ -566,11 +567,11 @@ export const uploadTemplateMedia = action({
     const uploadData = await uploadRes.json();
 
     if (!uploadRes.ok) {
-      console.error("Failed to upload file content:", uploadData);
+      logger.error("Failed to upload file content:", uploadData);
       throw new Error(uploadData.error?.message || "Failed to upload file content");
     }
 
-    console.log(`[UploadTemplateMedia] Upload complete, handle: ${uploadData.h}`);
+    logger.debug(`[UploadTemplateMedia] Upload complete, handle: ${uploadData.h}`);
 
     // Return the handle
     return uploadData.h;
@@ -594,7 +595,7 @@ export const uploadExternalTemplateMedia = action({
     }
 
     // 1. Fetch File Content from External URL
-    console.log(`[UploadExternal] Fetching from ${args.url}`);
+    logger.debug(`[UploadExternal] Fetching from ${args.url}`);
     const fileRes = await fetch(args.url);
     if (!fileRes.ok) throw new Error(`Failed to fetch external media: ${fileRes.statusText}`);
 
@@ -602,7 +603,7 @@ export const uploadExternalTemplateMedia = action({
     const fileLength = blob.size;
     const fileType = args.type || fileRes.headers.get("content-type") || "image/jpeg";
 
-    console.log(`[UploadExternal] Starting upload for ${fileType}, size: ${fileLength}`);
+    logger.debug(`[UploadExternal] Starting upload for ${fileType}, size: ${fileLength}`);
 
     // 2. Start Upload Session
     const sessionUrl = `https://graph.facebook.com/v21.0/${appId}/uploads?file_length=${fileLength}&file_type=${fileType}`;
@@ -617,7 +618,7 @@ export const uploadExternalTemplateMedia = action({
     const sessionData = await sessionRes.json();
 
     if (!sessionRes.ok) {
-      console.error("Failed to create upload session:", sessionData);
+      logger.error("Failed to create upload session:", sessionData);
       throw new Error(sessionData.error?.message || "Failed to create upload session");
     }
 
@@ -638,11 +639,11 @@ export const uploadExternalTemplateMedia = action({
     const uploadData = await uploadRes.json();
 
     if (!uploadRes.ok) {
-      console.error("Failed to upload file content:", uploadData);
+      logger.error("Failed to upload file content:", uploadData);
       throw new Error(uploadData.error?.message || "Failed to upload file content");
     }
 
-    console.log(`[UploadExternal] Upload complete, handle: ${uploadData.h}`);
+    logger.debug(`[UploadExternal] Upload complete, handle: ${uploadData.h}`);
 
     return uploadData.h;
   }
@@ -704,7 +705,7 @@ export const hydrateIncomingMedia = internalAction({
         storageId,
       });
     } catch (error) {
-      console.error("[WhatsApp] hydrateIncomingMedia failed:", error);
+      logger.error("[WhatsApp] hydrateIncomingMedia failed:", error);
     }
   },
 });
@@ -721,7 +722,7 @@ export const verifyWebhook = internalAction({
     webhook_slug: v.optional(v.string()), // Backward compatibility: Unique webhook identifier for fast lookup
   },
   handler: async (ctx, args) => {
-    console.log("[VerifyWebhook] Received:", { 
+    logger.debug("[VerifyWebhook] Received:", { 
       mode: args.mode, 
       token: args.verify_token ? `${args.verify_token.substring(0, 10)}...` : "missing", 
       userId: args.user_id,
@@ -730,7 +731,7 @@ export const verifyWebhook = internalAction({
     });
 
     if (args.mode !== "subscribe" || !args.verify_token) {
-      console.error("[VerifyWebhook] Invalid mode or missing token", { 
+      logger.error("[VerifyWebhook] Invalid mode or missing token", { 
         mode: args.mode, 
         hasToken: !!args.verify_token 
       });
@@ -741,7 +742,7 @@ export const verifyWebhook = internalAction({
 
     // Priority 1: If organization_slug is provided, lookup organization and verify by organizationId + token
     if (args.organization_slug) {
-      console.log(`[VerifyWebhook] Attempting lookup by organization slug: ${args.organization_slug}`);
+      logger.debug(`[VerifyWebhook] Attempting lookup by organization slug: ${args.organization_slug}`);
       try {
         // Get organization by slug
         const organization = await ctx.runQuery(api.organizations.getOrganizationBySlug, {
@@ -757,24 +758,24 @@ export const verifyWebhook = internalAction({
           if (webhookConfig) {
             const storedToken = webhookConfig.verifyToken?.trim() || "";
             const receivedToken = args.verify_token?.trim() || "";
-            console.log(`[VerifyWebhook] ✓ OrganizationSlug+Token matched: ${webhookConfig.name} (org: ${webhookConfig.organizationId})`);
-            console.log(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
+            logger.debug(`[VerifyWebhook] ✓ OrganizationSlug+Token matched: ${webhookConfig.name} (org: ${webhookConfig.organizationId})`);
+            logger.debug(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
             verifiedWebhookConfig = webhookConfig;
           } else {
             const receivedToken = args.verify_token?.trim() || "";
-            console.error(`[VerifyWebhook] ✗ OrganizationSlug+Token verification failed for slug: ${args.organization_slug}, token: "${receivedToken.substring(0, 15)}..."`);
+            logger.error(`[VerifyWebhook] ✗ OrganizationSlug+Token verification failed for slug: ${args.organization_slug}, token: "${receivedToken.substring(0, 15)}..."`);
           }
         } else {
-          console.error(`[VerifyWebhook] ✗ Organization not found for slug: ${args.organization_slug}`);
+          logger.error(`[VerifyWebhook] ✗ Organization not found for slug: ${args.organization_slug}`);
         }
       } catch (err) {
-        console.error(`[VerifyWebhook] Error looking up by organization slug: ${err}`);
+        logger.error(`[VerifyWebhook] Error looking up by organization slug: ${err}`);
       }
     }
 
     // Priority 2: If userId is provided and no org match, use fast lookup by userId + token (backward compatibility)
     if (!verifiedWebhookConfig && args.user_id) {
-      console.log(`[VerifyWebhook] Attempting lookup by userId: ${args.user_id}`);
+      logger.debug(`[VerifyWebhook] Attempting lookup by userId: ${args.user_id}`);
       try {
         const webhookConfig = await ctx.runQuery(api.webhooks.getWebhookByUserIdAndToken, {
           userId: args.user_id as any, // Cast to Id<"users">
@@ -784,34 +785,34 @@ export const verifyWebhook = internalAction({
         if (webhookConfig) {
           const storedToken = webhookConfig.verifyToken?.trim() || "";
           const receivedToken = args.verify_token?.trim() || "";
-          console.log(`[VerifyWebhook] ✓ UserId+Token matched: ${webhookConfig.name} (user: ${webhookConfig.userId})`);
-          console.log(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
+          logger.debug(`[VerifyWebhook] ✓ UserId+Token matched: ${webhookConfig.name} (user: ${webhookConfig.userId})`);
+          logger.debug(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
           verifiedWebhookConfig = webhookConfig;
         } else {
           const receivedToken = args.verify_token?.trim() || "";
-          console.error(`[VerifyWebhook] ✗ UserId+Token verification failed for userId: ${args.user_id}, token: "${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length})`);
+          logger.error(`[VerifyWebhook] ✗ UserId+Token verification failed for userId: ${args.user_id}, token: "${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length})`);
           // Try to see if webhook exists but token doesn't match
           const userWebhooks = await ctx.runQuery(api.webhooks.listWebhooks, {
             userId: args.user_id as any,
           });
           if (userWebhooks && userWebhooks.length > 0) {
-            console.log(`[VerifyWebhook] Found ${userWebhooks.length} webhook(s) for user, but token mismatch:`);
+            logger.debug(`[VerifyWebhook] Found ${userWebhooks.length} webhook(s) for user, but token mismatch:`);
             userWebhooks.forEach((w, idx) => {
               const storedToken = w.verifyToken?.trim() || "";
-              console.log(`[VerifyWebhook]   Webhook ${idx + 1}: stored="${storedToken.substring(0, 20)}..." (length: ${storedToken.length}), received="${receivedToken.substring(0, 20)}..." (length: ${receivedToken.length}), match: ${storedToken === receivedToken}`);
+              logger.debug(`[VerifyWebhook]   Webhook ${idx + 1}: stored="${storedToken.substring(0, 20)}..." (length: ${storedToken.length}), received="${receivedToken.substring(0, 20)}..." (length: ${receivedToken.length}), match: ${storedToken === receivedToken}`);
             });
           } else {
-            console.log(`[VerifyWebhook] No webhooks found for userId: ${args.user_id}`);
+            logger.debug(`[VerifyWebhook] No webhooks found for userId: ${args.user_id}`);
           }
         }
       } catch (err) {
-        console.error(`[VerifyWebhook] Error looking up by userId: ${err}`);
+        logger.error(`[VerifyWebhook] Error looking up by userId: ${err}`);
       }
     }
 
     // Priority 3: If webhook_slug is provided and no match yet, use fast lookup by slug + token (backward compatibility)
     if (!verifiedWebhookConfig && args.webhook_slug) {
-      console.log(`[VerifyWebhook] Attempting lookup by slug: ${args.webhook_slug}`);
+      logger.debug(`[VerifyWebhook] Attempting lookup by slug: ${args.webhook_slug}`);
       const webhookConfig = await ctx.runQuery(api.webhooks.getWebhookBySlugAndToken, {
         webhookSlug: args.webhook_slug,
         verifyToken: args.verify_token,
@@ -820,18 +821,18 @@ export const verifyWebhook = internalAction({
       if (webhookConfig) {
         const storedToken = webhookConfig.verifyToken?.trim() || "";
         const receivedToken = args.verify_token?.trim() || "";
-        console.log(`[VerifyWebhook] ✓ Slug+Token matched: ${webhookConfig.name} (user: ${webhookConfig.userId}, slug: ${webhookConfig.webhookSlug})`);
-        console.log(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
+        logger.debug(`[VerifyWebhook] ✓ Slug+Token matched: ${webhookConfig.name} (user: ${webhookConfig.userId}, slug: ${webhookConfig.webhookSlug})`);
+        logger.debug(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
         verifiedWebhookConfig = webhookConfig;
       } else {
         const receivedToken = args.verify_token?.trim() || "";
-        console.error(`[VerifyWebhook] ✗ Slug+Token verification failed for slug: ${args.webhook_slug}, token: "${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length})`);
+        logger.error(`[VerifyWebhook] ✗ Slug+Token verification failed for slug: ${args.webhook_slug}, token: "${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length})`);
       }
     }
 
     // Fallback: Try to find webhook by token only (backward compatibility)
     if (!verifiedWebhookConfig) {
-      console.log("[VerifyWebhook] Attempting lookup by token only (fallback)");
+      logger.debug("[VerifyWebhook] Attempting lookup by token only (fallback)");
       const webhookConfig = await ctx.runQuery(api.webhooks.getWebhookByToken, {
         verifyToken: args.verify_token,
       });
@@ -839,12 +840,12 @@ export const verifyWebhook = internalAction({
       if (webhookConfig) {
         const storedToken = webhookConfig.verifyToken?.trim() || "";
         const receivedToken = args.verify_token?.trim() || "";
-        console.log(`[VerifyWebhook] ✓ Token matched in webhook config: ${webhookConfig.name} (user: ${webhookConfig.userId})`);
-        console.log(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
+        logger.debug(`[VerifyWebhook] ✓ Token matched in webhook config: ${webhookConfig.name} (user: ${webhookConfig.userId})`);
+        logger.debug(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
         verifiedWebhookConfig = webhookConfig;
       } else {
         const receivedToken = args.verify_token?.trim() || "";
-        console.error(`[VerifyWebhook] ✗ Token-only lookup failed for token: "${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length})`);
+        logger.error(`[VerifyWebhook] ✗ Token-only lookup failed for token: "${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length})`);
       }
     }
 
@@ -854,7 +855,7 @@ export const verifyWebhook = internalAction({
         webhookId: verifiedWebhookConfig._id,
         organizationId: verifiedWebhookConfig.organizationId,
       });
-      console.log(`[VerifyWebhook] Webhook marked as verified: ${verifiedWebhookConfig.name}`);
+      logger.info(`[VerifyWebhook] Webhook marked as verified: ${verifiedWebhookConfig.name}`);
       return { success: true, challenge: args.challenge };
     }
 
@@ -863,9 +864,9 @@ export const verifyWebhook = internalAction({
     let matchedUserId: string | null = null;
     
     if (!verifiedWebhookConfig) {
-      console.log("[VerifyWebhook] Trying Organization Vault fallback lookup...");
+      logger.debug("[VerifyWebhook] Trying Organization Vault fallback lookup...");
       const allOrganizations = await ctx.runQuery(api.organizations.listAll, {});
-      console.log(`[VerifyWebhook] Checking ${allOrganizations.length} organizations for matching token`);
+      logger.debug(`[VerifyWebhook] Checking ${allOrganizations.length} organizations for matching token`);
       
       for (const org of allOrganizations) {
         try {
@@ -877,28 +878,28 @@ export const verifyWebhook = internalAction({
           const receivedToken = args.verify_token?.trim() || "";
           
           if (orgVerifyToken && storedToken === receivedToken) {
-            console.log(`[VerifyWebhook] ✓ Token matched for organization: ${org._id} via Vault`);
-            console.log(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
+            logger.debug(`[VerifyWebhook] ✓ Token matched for organization: ${org._id} via Vault`);
+            logger.debug(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
             matchedOrganizationId = org._id;
             break;
           } else if (orgVerifyToken) {
-            console.log(`[VerifyWebhook] ✗ Token mismatch for organization ${org._id}:`);
-            console.log(`[VerifyWebhook]   Received: "${receivedToken.substring(0, 20)}..." (length: ${receivedToken.length})`);
-            console.log(`[VerifyWebhook]   Stored:   "${storedToken.substring(0, 20)}..." (length: ${storedToken.length})`);
-            console.log(`[VerifyWebhook]   Exact match: ${storedToken === receivedToken}`);
+            logger.debug(`[VerifyWebhook] ✗ Token mismatch for organization ${org._id}:`);
+            logger.debug(`[VerifyWebhook]   Received: "${receivedToken.substring(0, 20)}..." (length: ${receivedToken.length})`);
+            logger.debug(`[VerifyWebhook]   Stored:   "${storedToken.substring(0, 20)}..." (length: ${storedToken.length})`);
+            logger.debug(`[VerifyWebhook]   Exact match: ${storedToken === receivedToken}`);
           }
         } catch (err) {
           // Skip organizations without vault variables
-          console.log(`[VerifyWebhook] Error checking vault for organization ${org._id}: ${err}`);
+          logger.debug(`[VerifyWebhook] Error checking vault for organization ${org._id}: ${err}`);
           continue;
         }
       }
 
       // Fallback to user vault (backward compatibility)
       if (!matchedOrganizationId) {
-        console.log("[VerifyWebhook] Trying User Vault fallback lookup...");
+        logger.debug("[VerifyWebhook] Trying User Vault fallback lookup...");
         const allUsers = await ctx.runQuery(api.users.list, {});
-        console.log(`[VerifyWebhook] Checking ${allUsers.length} users for matching token`);
+        logger.debug(`[VerifyWebhook] Checking ${allUsers.length} users for matching token`);
         
         for (const user of allUsers) {
           try {
@@ -910,14 +911,14 @@ export const verifyWebhook = internalAction({
             const receivedToken = args.verify_token?.trim() || "";
             
             if (userVerifyToken && storedToken === receivedToken) {
-              console.log(`[VerifyWebhook] ✓ Token matched for user: ${user._id} via Vault`);
-              console.log(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
+              logger.debug(`[VerifyWebhook] ✓ Token matched for user: ${user._id} via Vault`);
+              logger.debug(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), stored="${storedToken.substring(0, 15)}..." (length: ${storedToken.length})`);
               matchedUserId = user._id;
               break;
             }
           } catch (err) {
             // Skip users without vault variables
-            console.log(`[VerifyWebhook] Error checking vault for user ${user._id}: ${err}`);
+            logger.debug(`[VerifyWebhook] Error checking vault for user ${user._id}: ${err}`);
             continue;
           }
         }
@@ -929,19 +930,19 @@ export const verifyWebhook = internalAction({
         const storedEnvToken = envVerifyToken?.trim() || "";
         const receivedToken = args.verify_token?.trim() || "";
         if (envVerifyToken && storedEnvToken === receivedToken) {
-          console.log("[VerifyWebhook] ✓ Token matched from environment variable");
-          console.log(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), env="${storedEnvToken.substring(0, 15)}..." (length: ${storedEnvToken.length})`);
+          logger.debug("[VerifyWebhook] ✓ Token matched from environment variable");
+          logger.debug(`[VerifyWebhook] Token details: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), env="${storedEnvToken.substring(0, 15)}..." (length: ${storedEnvToken.length})`);
           // For env variable, we can't identify specific org/user, so skip marking as verified
           // This is backward compatibility only
           return { success: true, challenge: args.challenge };
         } else if (envVerifyToken) {
-          console.log(`[VerifyWebhook] ✗ Environment variable token mismatch: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), env="${storedEnvToken.substring(0, 15)}..." (length: ${storedEnvToken.length})`);
+          logger.debug(`[VerifyWebhook] ✗ Environment variable token mismatch: received="${receivedToken.substring(0, 15)}..." (length: ${receivedToken.length}), env="${storedEnvToken.substring(0, 15)}..." (length: ${storedEnvToken.length})`);
         }
       }
 
       // If we found an organization via Vault token, try to find and mark their webhook as verified
       if (matchedOrganizationId && !verifiedWebhookConfig) {
-        console.log(`[VerifyWebhook] Found organization via Vault token, looking up webhook for organization: ${matchedOrganizationId}`);
+        logger.debug(`[VerifyWebhook] Found organization via Vault token, looking up webhook for organization: ${matchedOrganizationId}`);
         const orgWebhooks = await ctx.runQuery(api.webhooks.listWebhooks, {
           organizationId: matchedOrganizationId,
         });
@@ -951,16 +952,16 @@ export const verifyWebhook = internalAction({
             webhookId: activeWebhook._id,
             organizationId: matchedOrganizationId,
           });
-          console.log(`[VerifyWebhook] ✓ Webhook marked as verified via Vault token for organization: ${matchedOrganizationId}`);
+          logger.info(`[VerifyWebhook] ✓ Webhook marked as verified via Vault token for organization: ${matchedOrganizationId}`);
           return { success: true, challenge: args.challenge };
         } else {
-          console.error(`[VerifyWebhook] ✗ No active webhook found for organization ${matchedOrganizationId} even though token matched in Vault`);
+          logger.error(`[VerifyWebhook] ✗ No active webhook found for organization ${matchedOrganizationId} even though token matched in Vault`);
         }
       }
 
       // If we found a user via Vault token (backward compatibility), try to find and mark their webhook as verified
       if (matchedUserId && !verifiedWebhookConfig) {
-        console.log(`[VerifyWebhook] Found user via Vault token, looking up webhook for user: ${matchedUserId}`);
+        logger.debug(`[VerifyWebhook] Found user via Vault token, looking up webhook for user: ${matchedUserId}`);
         const userWebhooks = await ctx.runQuery(api.webhooks.listWebhooks, {
           userId: matchedUserId,
         });
@@ -970,20 +971,20 @@ export const verifyWebhook = internalAction({
             webhookId: activeWebhook._id,
             organizationId: activeWebhook.organizationId,
           });
-          console.log(`[VerifyWebhook] ✓ Webhook marked as verified via Vault token for user: ${matchedUserId}`);
+          logger.info(`[VerifyWebhook] ✓ Webhook marked as verified via Vault token for user: ${matchedUserId}`);
           return { success: true, challenge: args.challenge };
         } else {
-          console.error(`[VerifyWebhook] ✗ No active webhook found for user ${matchedUserId} even though token matched in Vault`);
+          logger.error(`[VerifyWebhook] ✗ No active webhook found for user ${matchedUserId} even though token matched in Vault`);
         }
       }
     }
 
     if (verifiedWebhookConfig || matchedOrganizationId || matchedUserId) {
-      console.log("[VerifyWebhook] ✓ Webhook Verified Successfully!");
+      logger.info("[VerifyWebhook] ✓ Webhook Verified Successfully!");
       return { success: true, challenge: args.challenge };
     } else {
-      console.error("[VerifyWebhook] ✗ Webhook Verification Failed - No matching token found");
-      console.error("[VerifyWebhook] Summary:", {
+      logger.error("[VerifyWebhook] ✗ Webhook Verification Failed - No matching token found");
+      logger.debug("[VerifyWebhook] Summary:", {
         receivedToken: args.verify_token ? `${args.verify_token.substring(0, 10)}...` : "missing",
         userId: args.user_id || "none",
         organizationSlug: args.organization_slug || "none",
@@ -1022,17 +1023,17 @@ export const processWebhookAction = internalAction({
     const value = change?.value;
     const field = change?.field;
 
-    console.log(`[Webhook Action] Processing field: ${field}`);
+    logger.info(`[Webhook Action] Processing field: ${field}`);
 
     if (!value) {
-      console.warn("[Webhook Action] No value found in change object:", JSON.stringify(change));
+      logger.warn("[Webhook Action] No value found in change object:", JSON.stringify(change));
       return;
     }
 
     // CRITICAL: Identify user from phone_number_id
     const phoneNumberId = value.metadata?.phone_number_id;
     if (!phoneNumberId) {
-      console.error("[Webhook Action] No phone_number_id found in webhook payload");
+      logger.error("[Webhook Action] No phone_number_id found in webhook payload");
       return;
     }
 
@@ -1042,7 +1043,7 @@ export const processWebhookAction = internalAction({
     });
 
     if (!lookup || (!lookup.userId && !lookup.organizationId)) {
-      console.error(`[Webhook Action] No user/organization found for phone_number_id: ${phoneNumberId}`);
+      logger.error(`[Webhook Action] No user/organization found for phone_number_id: ${phoneNumberId}`);
       return; // Don't process webhook if not found
     }
 
@@ -1055,24 +1056,24 @@ export const processWebhookAction = internalAction({
         const user = await ctx.runQuery(api.auth.getUser, { userId });
         if (user?.currentOrganizationId) {
           organizationId = user.currentOrganizationId;
-          console.log(`[Webhook Action] Retrieved organizationId ${organizationId} from user ${userId}`);
+          logger.debug(`[Webhook Action] Retrieved organizationId ${organizationId} from user ${userId}`);
         }
       } catch (error) {
-        console.error(`[Webhook Action] Failed to get user for userId ${userId}:`, error);
+        logger.error(`[Webhook Action] Failed to get user for userId ${userId}:`, error);
       }
     }
     
     // Final check: organizationId is required for processing
     if (!organizationId) {
-      console.error(`[Webhook Action] No organizationId found for phone_number_id: ${phoneNumberId}, userId: ${userId}. Skipping webhook processing.`);
+      logger.error(`[Webhook Action] No organizationId found for phone_number_id: ${phoneNumberId}, userId: ${userId}. Skipping webhook processing.`);
       return; // Don't process without organization
     }
     
-    console.log(`[Webhook Action] Identified user: ${userId}, organization: ${organizationId} for phone_number_id: ${phoneNumberId}`);
+    logger.info(`[Webhook Action] Identified user: ${userId}, organization: ${organizationId} for phone_number_id: ${phoneNumberId}`);
 
     // Handle Messages
     if (value.messages) {
-      console.log(`[Webhook Action] Processing ${value.messages.length} messages`);
+      logger.info(`[Webhook Action] Processing ${value.messages.length} messages`);
       for (const message of value.messages) {
         let content = message.text?.body || "";
         let mediaId = undefined;
@@ -1081,9 +1082,9 @@ export const processWebhookAction = internalAction({
           const mediaData = message[message.type];
           mediaId = mediaData.id;
           content = mediaData.caption || "";
-          console.log(`[Webhook Action] Found media: ${message.type}, ID: ${mediaId}`);
+          logger.debug(`[Webhook Action] Found media: ${message.type}, ID: ${mediaId}`);
         } else {
-          console.log(`[Webhook Action] Message type: ${message.type}, Content: "${content.substring(0, 50)}..."`);
+          logger.debug(`[Webhook Action] Message type: ${message.type}, Content: "${content.substring(0, 50)}..."`);
         }
 
         const contactPhone = message.from;
@@ -1134,9 +1135,9 @@ export const processWebhookAction = internalAction({
 
     // Handle Status Updates (Sent, Delivered, Read)
     if (value.statuses) {
-      console.log(`[Webhook Action] Processing ${value.statuses.length} status updates`);
+      logger.info(`[Webhook Action] Processing ${value.statuses.length} status updates`);
       for (const status of value.statuses) {
-        console.log(`[Webhook Action] Status update for ${status.id}: ${status.status}`);
+        logger.debug(`[Webhook Action] Status update for ${status.id}: ${status.status}`);
 
         // 1. Try updating standard chat messages
         const msgSuccess = organizationId ? await ctx.runMutation(internal.messages.updateMessageStatus, {
@@ -1162,9 +1163,9 @@ export const processWebhookAction = internalAction({
           
           if (isRecentTestMessage && attempt === 1) {
             // Likely a test message - skip retries and log once
-            console.log(`[Webhook] Status update for test message ${status.id} (no DB record), skipping retries`);
+            logger.debug(`[Webhook] Status update for test message ${status.id} (no DB record), skipping retries`);
           } else if (attempt < 3) {
-            console.log(`[Webhook] Message ${status.id} not found in messages or campaigns, scheduling retry #${attempt + 1}`);
+            logger.info(`[Webhook] Message ${status.id} not found in messages or campaigns, scheduling retry #${attempt + 1}`);
             // Retry in 2 seconds
             await ctx.scheduler.runAfter(2000, internal.whatsapp.processWebhookAction, {
               body: args.body,
@@ -1173,14 +1174,14 @@ export const processWebhookAction = internalAction({
             // Stop processing this batch to avoid duplicate scheduling if there are multiple statuses
             return;
           } else {
-            console.warn(`[Webhook] Message ${status.id} not found after 3 attempts. Giving up.`);
+            logger.warn(`[Webhook] Message ${status.id} not found after 3 attempts. Giving up.`);
           }
         } else {
           if (campaignSuccess) {
-            console.log(`[Webhook] Updated campaign log for ${status.id}`);
+            logger.info(`[Webhook] Updated campaign log for ${status.id}`);
           }
           if (msgSuccess) {
-            console.log(`[Webhook] Updated chat message for ${status.id}`);
+            logger.info(`[Webhook] Updated chat message for ${status.id}`);
           }
         }
       }
