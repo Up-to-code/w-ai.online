@@ -46,7 +46,22 @@ import {
 import { AvatarImage } from "@/components/ui/avatar"
 import { initialsFromName } from "@/lib/utils"
 
-// Sidebar Content Component - Simplified to logo only
+// Navigation items for the sidebar
+const navigationItems = [
+  { href: "/dashboard", icon: LayoutDashboard, label: "لوحة التحكم" },
+  { href: "/chat", icon: MessageSquare, label: "المحادثات" },
+  { href: "/campaigns", icon: Megaphone, label: "الحملات" },
+  { href: "/customers", icon: Users, label: "العملاء" },
+  { href: "/products", icon: Package, label: "المنتجات" },
+  { href: "/templates", icon: FileText, label: "القوالب" },
+  { href: "/workflows", icon: Zap, label: "الأتمتة" },
+  { href: "/integrations", icon: Link2, label: "التكاملات" },
+  { href: "/ai-settings", icon: Bot, label: "إعدادات الذكاء" },
+  { href: "/users", icon: UserCog, label: "المستخدمين" },
+  { href: "/settings", icon: Settings, label: "الإعدادات" },
+]
+
+// Sidebar Content Component
 function SidebarContent({ pathname }: { pathname: string }) {
   return (
     <div className="flex flex-col h-full bg-sidebar">
@@ -62,6 +77,27 @@ function SidebarContent({ pathname }: { pathname: string }) {
           </div>
         </div>
       </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        {navigationItems.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
+            </Link>
+          )
+        })}
+      </nav>
     </div>
   )
 }

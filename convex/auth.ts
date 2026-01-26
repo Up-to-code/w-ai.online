@@ -17,6 +17,14 @@ export const authKit = new AuthKit<DataModel>(components.workOSAuthKit, {
   additionalEventTypes: ["session.created", "session.revoked"],
 });
 
+// WorkOS Actions handler (for user registration/authentication actions)
+export const { authKitAction } = authKit.actions({
+  userRegistration: async (_ctx, _action, response) => {
+    // Allow all user registrations by default
+    return response.allow();
+  },
+});
+
 // Sync WorkOS users to our users table
 export const { authKitEvent } = authKit.events({
   "user.created": async (ctx, event) => {
