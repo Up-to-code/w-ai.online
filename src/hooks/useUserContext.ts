@@ -45,7 +45,7 @@ export function useUserContext() {
     if (!authLoading && workOSUser && appUser === null) {
       syncUser();
     }
-  }, [workOSUser, appUser, authLoading, ensureUserExists, isSyncing]);
+  }, [workOSUser, appUser, authLoading, ensureUserExists]); // Removed isSyncing to prevent loop
 
   const isLoading = authLoading || isSyncing || (!!workOSUser && appUser === undefined);
   const isAuthenticated = !!workOSUser && !!appUser;

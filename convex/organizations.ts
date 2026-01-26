@@ -41,12 +41,18 @@ export const createOrganization = mutation({
     // Check if user is already an owner of any organization
     for (const membership of existingMemberships) {
       if (membership.role === "owner") {
-        throw new Error("يمكن للمستخدم إنشاء منظمة واحدة فقط");
+        const org = await ctx.db.get(membership.organizationId);
+        if (org) {
+          throw new Error("يمكن للمستخدم إنشاء منظمة واحدة فقط");
+        } else {
+          // Self-healing: Delete zombie membership (organization no longer exists)
+          await ctx.db.delete(membership._id);
+        }
       }
     }
 
     const now = Date.now();
-    
+
     // Create organization
     const orgId = await ctx.db.insert("organizations", {
       name: args.name,
@@ -161,14 +167,14 @@ export const getCurrentOrganization = query({
       .query("organizationMembers")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
-    
+
     if (memberships) {
       const org = await ctx.db.get(memberships.organizationId);
       if (org) {
         return { ...org, role: memberships.role };
       }
     }
-    
+
     return null;
   },
 });

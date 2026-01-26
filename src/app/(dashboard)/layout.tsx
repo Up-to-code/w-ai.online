@@ -87,11 +87,10 @@ function SidebarContent({ pathname }: { pathname: string }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
                   ? "bg-primary text-primary-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              }`}
+                }`}
             >
               <item.icon className="h-5 w-5" />
               <span>{item.label}</span>
@@ -185,12 +184,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [isLoading, workOSUser, pathname])
 
   // Show loading state while checking authentication or organization
-  if (isLoading || isOrgLoading) {
+  // Also show loading if user is authenticated (WorkOS) but not yet synced to DB (no userId)
+  if (isLoading || isOrgLoading || (workOSUser && !userId)) {
     return (
       <div className="flex h-screen items-center justify-center" dir="rtl">
         <div className="text-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">جارٍ التحقق من الهوية...</p>
+          <p className="text-muted-foreground">
+            {isLoading || (workOSUser && !userId) ? "جارٍ تسجيل الدخول..." : "جارٍ تحميل البيانات..."}
+          </p>
         </div>
       </div>
     )
@@ -214,7 +216,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     });
     return (
       <div className="flex h-screen items-center justify-center bg-background" dir="rtl">
-        <CreateOrganizationModal open={true} onOpenChange={() => {}} blocking={true} />
+        <CreateOrganizationModal open={true} onOpenChange={() => { }} blocking={true} />
       </div>
     )
   }
