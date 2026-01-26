@@ -163,11 +163,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     // Wait for authentication to settle; if unauthenticated, force full navigation
     // so AuthKit middleware runs and redirects to WorkOS (router.push may not trigger it)
-    if (!isLoading && !isAuthenticated) {
+    // Only redirect if we're not already on /dashboard to prevent infinite loops
+    if (!isLoading && !isAuthenticated && pathname !== "/dashboard") {
       window.location.href = "/dashboard"
       return
     }
-  }, [isLoading, isAuthenticated])
+  }, [isLoading, isAuthenticated, pathname])
 
   // Show loading state while checking authentication or organization
   if (isLoading || isOrgLoading) {
