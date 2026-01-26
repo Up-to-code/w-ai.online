@@ -47,8 +47,15 @@ function checkEnvVars() {
 }
 
 // Only check in CI/build environments (not local dev)
-if (process.env.CI || process.env.VERCEL || process.env.NODE_ENV === 'production') {
+// Check if we're in a CI/CD environment
+const isCI = process.env.CI === 'true' || 
+             process.env.VERCEL === '1' || 
+             process.env.VERCEL_ENV !== undefined ||
+             process.env.GITHUB_ACTIONS !== undefined;
+
+if (isCI) {
   checkEnvVars();
 } else {
   console.log('ℹ️  Skipping environment variable check (local development)');
+  console.log('   This check only runs in CI/CD environments (Vercel, GitHub Actions, etc.)');
 }
