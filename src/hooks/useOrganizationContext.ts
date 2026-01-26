@@ -67,6 +67,6 @@ export function useOrganizationContext() {
     switchToOrganization,
     hasPermission,
     hasOrganization,
-    isLoading: organizations === undefined || currentOrganization === undefined,
+    isLoading: !!userId && (organizations === undefined || currentOrganization === undefined),
   };
 }
