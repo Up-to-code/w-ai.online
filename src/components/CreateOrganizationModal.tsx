@@ -292,7 +292,12 @@ export function CreateOrganizationModal({
         name: formData.name.trim(),
         slug: formData.slug.trim(),
       });
-      console.log("[CreateOrganizationModal] Organization created successfully", orgId);
+      console.log("[CreateOrganizationModal] Organization created successfully", {
+        orgId,
+        userId: effectiveUserId,
+        name: formData.name.trim(),
+        slug: formData.slug.trim(),
+      });
       toast.success("تم إنشاء المنظمة بنجاح");
       setFormData({ name: "", slug: "" });
       setSlugError("");
@@ -301,7 +306,11 @@ export function CreateOrganizationModal({
         onOpenChange(false);
       } else {
         // Reload page to refresh organization context
-        window.location.reload();
+        // Add a small delay to ensure the mutation has fully completed
+        console.log("[CreateOrganizationModal] Reloading page to refresh organization context...");
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       }
     } catch (error: any) {
       console.error("[CreateOrganizationModal] Error creating organization", error);

@@ -58,7 +58,29 @@ export function useOrganizationContext() {
   );
 
   // Check if user has an organization
-  const hasOrganization = currentOrganization !== null && currentOrganization !== undefined;
+  // Distinguish between:
+  // - undefined: still loading (don't show modal)
+  // - null: no organization (show modal)
+  // - object: has organization (don't show modal)
+  const hasOrganization = currentOrganization !== null && 
+    (currentOrganization !== undefined || (userId && organizations !== undefined && organizations.length > 0));
+
+  // Fix isLoading to account for userId being undefined
+  // Should be loading if:
+  // - userId is undefined (user context still loading)
+  // - OR userId exists but queries are still loading
+  const isLoading = !userId || (!!userId && (organizations === undefined || currentOrganization === undefined));
+
+  // Add logging for debugging
+  if (typeof window !== 'undefined') {
+    console.log("[useOrganizationContext] State:", {
+      userId,
+      organizations: organizations?.length || 0,
+      currentOrganization: currentOrganization ? "exists" : currentOrganization === null ? "null" : "undefined",
+      hasOrganization,
+      isLoading,
+    });
+  }
 
   return {
     organizations: organizations || [],
@@ -67,6 +89,6 @@ export function useOrganizationContext() {
     switchToOrganization,
     hasPermission,
     hasOrganization,
-    isLoading: !!userId && (organizations === undefined || currentOrganization === undefined),
+    isLoading,
   };
 }

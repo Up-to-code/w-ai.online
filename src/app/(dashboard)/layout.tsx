@@ -157,8 +157,22 @@ function DashboardHeader({ pathname }: { pathname: string }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { isLoading, isAuthenticated, workOSUser } = useUserContext()
-  const { isLoading: isOrgLoading, hasOrganization } = useOrganizationContext()
+  const { isLoading, isAuthenticated, workOSUser, userId } = useUserContext()
+  const { isLoading: isOrgLoading, hasOrganization, currentOrganization, organizations } = useOrganizationContext()
+
+  // Log state for debugging
+  useEffect(() => {
+    console.log("[DashboardLayout] State:", {
+      isLoading,
+      isOrgLoading,
+      hasOrganization,
+      userId,
+      workOSUser: !!workOSUser,
+      currentOrganization: currentOrganization ? "exists" : currentOrganization === null ? "null" : "undefined",
+      organizationsCount: organizations?.length || 0,
+      pathname,
+    });
+  }, [isLoading, isOrgLoading, hasOrganization, userId, workOSUser, currentOrganization, organizations, pathname]);
 
   useEffect(() => {
     // Wait for authentication to settle; if unauthenticated, force full navigation
@@ -188,7 +202,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   // Block access if user doesn't have an organization
-  if (!hasOrganization) {
+  // Only show modal if we're sure there's no organization (not just loading)
+  // Additional safety check: ensure userId exists and we're not in a loading state
+  if (!hasOrganization && !isOrgLoading && userId) {
+    console.log("[DashboardLayout] Showing CreateOrganizationModal - no organization found", {
+      hasOrganization,
+      isOrgLoading,
+      userId,
+      currentOrganization: currentOrganization ? "exists" : currentOrganization === null ? "null" : "undefined",
+      organizationsCount: organizations?.length || 0,
+    });
     return (
       <div className="flex h-screen items-center justify-center bg-background" dir="rtl">
         <CreateOrganizationModal open={true} onOpenChange={() => {}} blocking={true} />
