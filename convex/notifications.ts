@@ -6,22 +6,27 @@ import { components } from "./_generated/api";
 const pushNotifications = new PushNotifications<any>(components.pushNotifications);
 
 export const list = query({
-    args: { limit: v.optional(v.number()) },
+    args: {
+        organizationId: v.id("organizations"),
+        limit: v.optional(v.number())
+    },
     handler: async (ctx, args) => {
         const limit = args.limit || 20;
         return await ctx.db
             .query("notifications")
-            .withIndex("by_created_at")
+            .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
             .order("desc")
             .take(limit);
     },
 });
 
 export const unreadCount = query({
-    handler: async (ctx) => {
+    args: { organizationId: v.id("organizations") },
+    handler: async (ctx, args) => {
         const notifications = await ctx.db
             .query("notifications")
-            .withIndex("by_read", (q) => q.eq("read", false))
+            .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+            .filter((q) => q.eq(q.field("read"), false))
             .collect();
         return notifications.length;
     },
@@ -35,10 +40,12 @@ export const markAsRead = mutation({
 });
 
 export const markAllAsRead = mutation({
-    handler: async (ctx) => {
+    args: { organizationId: v.id("organizations") },
+    handler: async (ctx, args) => {
         const unread = await ctx.db
             .query("notifications")
-            .withIndex("by_read", (q) => q.eq("read", false))
+            .withIndex("by_org", (q) => q.eq("organizationId", args.organizationId))
+            .filter((q) => q.eq(q.field("read"), false))
             .collect();
 
         for (const n of unread) {
@@ -49,6 +56,8 @@ export const markAllAsRead = mutation({
 
 export const create = internalMutation({
     args: {
+        organizationId: v.id("organizations"),
+        userId: v.optional(v.id("users")),
         type: v.union(v.literal("info"), v.literal("warning"), v.literal("error"), v.literal("success")),
         title: v.string(),
         message: v.string(),
@@ -56,6 +65,8 @@ export const create = internalMutation({
     },
     handler: async (ctx, args) => {
         await ctx.db.insert("notifications", {
+            organizationId: args.organizationId,
+            userId: args.userId,
             type: args.type,
             title: args.title,
             message: args.message,

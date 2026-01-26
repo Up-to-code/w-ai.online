@@ -269,6 +269,9 @@ export const addMember = mutation({
       throw new Error("ليس لديك صلاحية لإضافة أعضاء");
     }
 
+    // Role check: Admin can only add viewers or agents or admins
+    // Owner can add anyone. (Type system handles owner restriction for args.role)
+
     // Check if already a member
     const existing = await ctx.db
       .query("organizationMembers")
@@ -371,6 +374,20 @@ export const updateMemberRole = mutation({
 
     if (!memberToUpdate) {
       throw new Error("المستخدم غير موجود في هذه المنظمة");
+    }
+
+    // Prevent changing role if user is the ONLY owner (optional check, but safer)
+    if (memberToUpdate.role === "owner" && args.role !== "owner") {
+      // Check if there are other owners
+      const owners = await ctx.db
+        .query("organizationMembers")
+        .withIndex("by_organization", q => q.eq("organizationId", args.organizationId))
+        .filter(q => q.eq(q.field("role"), "owner"))
+        .collect();
+
+      if (owners.length <= 1) {
+        throw new Error("لا يمكن تغيير دور المالك الوحيد للمنظمة");
+      }
     }
 
     await ctx.db.patch(memberToUpdate._id, {

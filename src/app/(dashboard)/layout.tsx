@@ -2,7 +2,9 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { useQuery } from "convex/react"
+import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -23,7 +25,9 @@ import {
   ShoppingBag,
   Bot,
   UserCog,
-  ArrowRight
+  ArrowRight,
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -45,7 +49,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { AvatarImage } from "@/components/ui/avatar"
-import { initialsFromName } from "@/lib/utils"
+import { initialsFromName, cn } from "@/lib/utils"
 
 // Navigation items for the sidebar
 const navigationItems = [
@@ -63,47 +67,90 @@ const navigationItems = [
 ]
 
 // Sidebar Content Component
-function SidebarContent({ pathname }: { pathname: string }) {
+function SidebarContent({ pathname, isCollapsed, onToggle }: { pathname: string; isCollapsed?: boolean; onToggle?: () => void }) {
   return (
-    <div className="flex flex-col h-full bg-sidebar">
+    <div className={cn(
+      "flex flex-col h-full bg-sidebar transition-all duration-300",
+      isCollapsed ? "w-20" : "w-64"
+    )}>
       {/* Logo/Branding */}
-      <div className="p-6 border-b border-sidebar-border flex items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-            <MessageSquare className="h-6 w-6 text-primary-foreground" />
+      <div className={cn(
+        "p-6 border-b border-sidebar-border flex items-center gap-3",
+        isCollapsed ? "justify-center" : "justify-between"
+      )}>
+        <div className={cn("flex items-center gap-4", isCollapsed && "justify-center")}>
+          <div className="w-10 h-10 shrink-0">
+            <img src="/apple-touch-icon.png" alt="W-AI" className="w-full h-full object-contain" />
           </div>
-          <div className="text-center">
-            <h1 className="text-lg font-bold text-sidebar-foreground">w-ai.online</h1>
-            <p className="text-xs text-muted-foreground">أتمت واتساب للأعمال</p>
-          </div>
+          {!isCollapsed && (
+            <div className="flex flex-col">
+              <h1 className="text-xl font-black text-sidebar-foreground tracking-tight leading-none">W-AI</h1>
+              <p className="text-[10px] text-muted-foreground font-medium mt-1">أتمت واتساب للأعمال</p>
+            </div>
+          )}
         </div>
+
+        {/* Toggle button inside sidebar for desktop */}
+        {onToggle && !isCollapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:flex h-8 w-8 text-muted-foreground hover:text-primary"
+            onClick={onToggle}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                }`}
+              title={isCollapsed ? item.label : undefined}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                isCollapsed && "justify-center px-0 h-11"
+              )}
             >
-              <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
+              <item.icon className={cn("h-5 w-5 shrink-0 transition-transform group-hover:scale-110", isActive && "scale-110")} />
+              {!isCollapsed && <span className="truncate">{item.label}</span>}
             </Link>
           )
         })}
       </nav>
+
+      {/* Footer / Toggle for collapsed state */}
+      {isCollapsed && onToggle && (
+        <div className="p-4 border-t border-sidebar-border flex justify-center">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-muted-foreground hover:text-primary"
+            onClick={onToggle}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
 
-function DashboardHeader({ pathname }: { pathname: string }) {
+function DashboardHeader({ pathname, isCollapsed, onToggle }: { pathname: string; isCollapsed?: boolean; onToggle?: () => void }) {
   const { content } = useDashboardHeader()
+  const { currentOrganization } = useOrganizationContext()
+  const unreadCount = useQuery(
+    api.notifications.unreadCount,
+    currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+  ) || 0
   const router = useRouter()
   const pathSegments = pathname.split("/").filter(Boolean)
   const showBack = pathSegments.length >= 2
@@ -111,6 +158,18 @@ function DashboardHeader({ pathname }: { pathname: string }) {
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 sm:px-6 gap-4">
       <div className="flex items-center gap-4 flex-1 min-w-0">
+        {/* Toggle for desktop if isCollapsed and button not in sidebar */}
+        {isCollapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:flex shrink-0 h-9 w-9"
+            onClick={onToggle}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+
         {showBack && (
           <Button
             variant="ghost"
@@ -147,7 +206,11 @@ function DashboardHeader({ pathname }: { pathname: string }) {
         <OrganizationSelector />
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5 text-muted-foreground" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-destructive text-[10px] font-bold text-destructive-foreground rounded-full flex items-center justify-center">
+              {unreadCount > 9 ? "+9" : unreadCount}
+            </span>
+          )}
         </Button>
       </div>
     </header>
@@ -158,6 +221,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const { isLoading, isAuthenticated, workOSUser, userId } = useUserContext()
   const { isLoading: isOrgLoading, hasOrganization, currentOrganization, organizations } = useOrganizationContext()
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed)
 
   // Log state for debugging
   useEffect(() => {
@@ -170,8 +236,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       currentOrganization: currentOrganization ? "exists" : currentOrganization === null ? "null" : "undefined",
       organizationsCount: organizations?.length || 0,
       pathname,
+      isCollapsed,
     });
-  }, [isLoading, isOrgLoading, hasOrganization, userId, workOSUser, currentOrganization, organizations, pathname]);
+  }, [isLoading, isOrgLoading, hasOrganization, userId, workOSUser, currentOrganization, organizations, pathname, isCollapsed]);
 
   useEffect(() => {
     // Wait for authentication to settle; if unauthenticated, force full navigation
@@ -223,15 +290,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <DashboardHeaderProvider>
-      <div className="flex h-screen bg-background font-sans" dir="rtl">
-        <aside className="hidden md:flex w-64 border-l border-sidebar-border flex-col">
-          <SidebarContent pathname={pathname} />
+      <div className="flex h-screen bg-background font-sans overflow-hidden" dir="rtl">
+        <aside className={cn(
+          "hidden md:flex border-l border-sidebar-border flex-col transition-all duration-300",
+          isCollapsed ? "w-20" : "w-64"
+        )}>
+          <SidebarContent pathname={pathname} isCollapsed={isCollapsed} onToggle={toggleSidebar} />
         </aside>
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <DashboardHeader pathname={pathname} />
+          <DashboardHeader pathname={pathname} isCollapsed={isCollapsed} onToggle={toggleSidebar} />
 
-          <main className="flex-1 overflow-auto bg-background">{children}</main>
+          <main className="flex-1 overflow-auto bg-background/50">{children}</main>
         </div>
 
         {/* Global Notifications */}
@@ -243,3 +313,4 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </DashboardHeaderProvider>
   )
 }
+

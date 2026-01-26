@@ -306,6 +306,8 @@ export default defineSchema({
     .index("by_org_campaign", ["organizationId", "campaignId"]),
 
   notifications: defineTable({
+    organizationId: v.optional(v.id("organizations")), // Scoped to organization
+    userId: v.optional(v.id("users")), // Optional: scoped to specific user in org
     type: v.union(v.literal("info"), v.literal("warning"), v.literal("error"), v.literal("success")),
     title: v.string(),
     message: v.string(),
@@ -313,7 +315,25 @@ export default defineSchema({
     createdAt: v.number(),
     link: v.optional(v.string()),
   }).index("by_read", ["read"])
+    .index("by_org", ["organizationId"])
+    .index("by_user", ["userId"])
     .index("by_created_at", ["createdAt"]),
+
+  invitations: defineTable({
+    email: v.string(),
+    organizationId: v.id("organizations"),
+    role: v.union(
+      v.literal("admin"),
+      v.literal("agent"),
+      v.literal("viewer")
+    ),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("expired"), v.literal("cancelled")),
+    invitedBy: v.id("users"),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+  }).index("by_email_org", ["email", "organizationId"])
+    .index("by_org", ["organizationId"])
+    .index("by_status", ["status"]),
 
   // User settings - notification preferences and general settings
   userSettings: defineTable({

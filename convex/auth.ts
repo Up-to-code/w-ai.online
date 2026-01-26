@@ -62,7 +62,6 @@ export const getCurrentUser = query({
   args: {},
   handler: async (ctx, _args) => {
     const authUser = await authKit.getAuthUser(ctx);
-    console.log("getCurrentUser debug:", { authUser: authUser?.id });
     if (!authUser) return null;
 
     // Get our app's user record

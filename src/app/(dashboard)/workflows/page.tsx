@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
+import { useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -38,6 +39,7 @@ import {
     UserPlus
 } from "lucide-react"
 import { logger } from "@/lib/logger"
+import { useOrganizationContext } from "@/hooks/useOrganizationContext"
 
 const TRIGGERS = [
     { value: "new_message", label: "رسالة جديدة", icon: MessageSquare },
@@ -55,9 +57,13 @@ const ACTIONS = [
 ]
 
 export default function WorkflowsPage() {
+    const { currentOrganization } = useOrganizationContext()
     const workflows = useUserQuery(api.workflows.list, {}) || []
     const templates = useUserQuery(api.templates.list, {}) || []
-    const users = useUserQuery(api.users.list, {}) || [] // Add this query
+    const users = useQuery(
+        api.users.list,
+        currentOrganization ? { organizationId: currentOrganization._id } : "skip"
+    ) || []
     const createWorkflow = useUserMutation(api.workflows.create)
     const updateWorkflow = useUserMutation(api.workflows.update)
     const toggleWorkflowMutation = useUserMutation(api.workflows.toggle)

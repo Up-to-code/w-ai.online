@@ -13,10 +13,10 @@ const tajawal = Cairo({
 export const metadata: Metadata = {
   metadataBase: new URL("https://w-ai.online"),
   title: {
-    template: "%s - w-ai.online",
-    default: "w-ai.online - أتمت واتساب للأعمال بالذكاء الاصطناعي",
+    template: "%s - W-AI",
+    default: "W-AI - أتمت واتساب للأعمال بالذكاء الاصطناعي",
   },
-  description: "منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي. وفر 50% من وقتك وزد مبيعاتك 3x مع ردود تلقائية ذكية وإدارة محادثات موحدة.",
+  description: "W-AI منصة شاملة لأتمتة واتساب للأعمال بالذكاء الاصطناعي. وفر 50% من وقتك وزد مبيعاتك 3x مع ردود تلقائية ذكية وإدارة محادثات موحدة.",
   keywords: [
     "واتساب للأعمال",
     "WhatsApp Business",

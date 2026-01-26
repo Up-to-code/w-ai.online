@@ -16,24 +16,27 @@ const SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview
 export function GlobalNotification() {
     const { userId } = useUserContext()
     const { currentOrganization } = useOrganizationContext()
-    
+
     // Get user notification settings
     const userSettings = useQuery(
         api.settings.getUserSettings,
         userId ? { userId, organizationId: currentOrganization?._id } : "skip"
     )
-    
+
     const latestMessage = useQuery(
         api.chat.getLatestGlobalMessage,
         userId ? { userId } : "skip"
     )
-    const notifications = useQuery(api.notifications.list, { limit: 5 })
+    const notifications = useQuery(
+        api.notifications.list,
+        currentOrganization ? { organizationId: currentOrganization._id, limit: 5 } : "skip"
+    )
     const markAsRead = useMutation(api.notifications.markAsRead)
-    
+
     const searchParams = useSearchParams()
     const pathname = usePathname()
     const router = useRouter()
-    
+
     const lastMessageIdRef = useRef<string | null>(null)
     const lastNotificationIdRef = useRef<string | null>(null)
     const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -53,7 +56,7 @@ export function GlobalNotification() {
         if (isFirstRun.current && !lastNotificationIdRef.current) {
             // Set the ref to the latest one so we don't alert on existing ones
             if (notifications.length > 0) {
-                 lastNotificationIdRef.current = notifications[0]._id
+                lastNotificationIdRef.current = notifications[0]._id
             }
             // We don't return here because we might want to handle chat messages below
             // But we should flag that we processed notifications
@@ -62,47 +65,46 @@ export function GlobalNotification() {
         // Find the latest unread notification that is NEW (different ID from last seen)
         // We assume the list is ordered by desc createdAt
         const latest = notifications[0]
-        
+
         if (latest && !latest.read && latest._id !== lastNotificationIdRef.current) {
             // Check if notifications are enabled
             if (!userSettings?.notificationsEnabled) return
             if (!userSettings?.globalNotificationsEnabled) return
-            
+
             // It's a new notification!
             if (!isFirstRun.current) { // Only play if not first run (double check)
                 // Play sound only if sound is enabled
                 if (userSettings?.soundEnabled) {
-                    audioRef.current?.play().catch(() => {})
+                    audioRef.current?.play().catch(() => { })
                 }
-                
+
                 toast.custom((t) => (
                     <div
-                       className="w-[360px] cursor-pointer"
-                       onClick={() => {
-                           toast.dismiss(t)
-                           markAsRead({ id: latest._id })
-                           if (latest.link) router.push(latest.link)
-                       }}
-                   >
-                       <div className="relative overflow-hidden rounded-[22px] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl border border-black/5 dark:border-white/10 p-4 shadow-2xl transition-all hover:scale-[1.02]">
-                           <div className="flex items-start gap-3">
-                               <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                                   latest.type === 'error' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
-                                   latest.type === 'warning' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' :
-                                   latest.type === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' :
-                                   'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                               }`}>
-                                   <Bell className="w-5 h-5" />
-                               </div>
-                               <div className="flex-1 min-w-0">
-                                   <h4 className="font-semibold text-sm text-foreground">{latest.title}</h4>
-                                   <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">{latest.message}</p>
-                                   <p className="text-[10px] text-muted-foreground/60 mt-2">الآن</p>
-                               </div>
-                           </div>
-                       </div>
-                   </div>
-               ), { duration: 6000, position: "top-right" })
+                        className="w-[360px] cursor-pointer"
+                        onClick={() => {
+                            toast.dismiss(t)
+                            markAsRead({ id: latest._id })
+                            if (latest.link) router.push(latest.link)
+                        }}
+                    >
+                        <div className="relative overflow-hidden rounded-[22px] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl border border-black/5 dark:border-white/10 p-4 shadow-2xl transition-all hover:scale-[1.02]">
+                            <div className="flex items-start gap-3">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${latest.type === 'error' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
+                                        latest.type === 'warning' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' :
+                                            latest.type === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' :
+                                                'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                                    }`}>
+                                    <Bell className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold text-sm text-foreground">{latest.title}</h4>
+                                    <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">{latest.message}</p>
+                                    <p className="text-[10px] text-muted-foreground/60 mt-2">الآن</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ), { duration: 6000, position: "top-right" })
             }
             lastNotificationIdRef.current = latest._id
         }

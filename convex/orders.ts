@@ -3,9 +3,16 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 export const list = query({
-    args: {},
-    handler: async (ctx) => {
-        return await ctx.db.query("orders").order("desc").collect();
+    args: { userId: v.id("users") },
+    handler: async (ctx, args) => {
+        const user = await ctx.db.get(args.userId);
+        if (!user || !user.currentOrganizationId) return [];
+
+        return await ctx.db
+            .query("orders")
+            .withIndex("by_org", (q) => q.eq("organizationId", user.currentOrganizationId))
+            .order("desc")
+            .collect();
     },
 });
 
