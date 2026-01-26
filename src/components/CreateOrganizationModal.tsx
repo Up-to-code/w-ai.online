@@ -31,6 +31,7 @@ export function CreateOrganizationModal({
 }: CreateOrganizationModalProps) {
   const { userId, user: appUser, workOSUser, isLoading: isUserLoading } = useUserContext();
   const createOrganization = useMutation(api.organizations.createOrganization);
+  const ensureUserExists = useMutation(api.auth.ensureUserExists);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -165,12 +166,28 @@ export function CreateOrganizationModal({
     }
 
     // Check if userId is missing
+    let effectiveUserId = userId;
+    
     if (!userId) {
-      // If workOSUser exists but appUser is null, user doesn't exist in database
+      // If workOSUser exists but appUser is null, create the user on-demand
       if (workOSUser && appUser === null) {
-        console.log("[CreateOrganizationModal] WorkOS user exists but app user is null - user not created in database");
-        toast.error("لم يتم إنشاء حساب المستخدم بعد. يرجى المحاولة مرة أخرى أو تحديث الصفحة.");
-        return;
+        console.log("[CreateOrganizationModal] WorkOS user exists but app user is null - creating user on-demand");
+        try {
+          const createdUser = await ensureUserExists({});
+          console.log("[CreateOrganizationModal] User created successfully", createdUser);
+          
+          if (!createdUser || !createdUser._id) {
+            throw new Error("فشل إنشاء حساب المستخدم");
+          }
+          
+          // Use the created user's ID to proceed with organization creation
+          effectiveUserId = createdUser._id;
+          toast.success("تم إنشاء حساب المستخدم بنجاح");
+        } catch (error: any) {
+          console.error("[CreateOrganizationModal] Error creating user", error);
+          toast.error(error?.message || "فشل إنشاء حساب المستخدم. يرجى المحاولة مرة أخرى.");
+          return;
+        }
       }
       // If workOSUser doesn't exist, user is not authenticated
       if (!workOSUser) {
@@ -179,8 +196,17 @@ export function CreateOrganizationModal({
         return;
       }
       // Otherwise, user is still loading or unknown state
-      console.log("[CreateOrganizationModal] No userId - unknown state", { appUser, workOSUser });
-      toast.error("خطأ في تحميل بيانات المستخدم. يرجى تحديث الصفحة والمحاولة مرة أخرى.");
+      if (!effectiveUserId) {
+        console.log("[CreateOrganizationModal] No userId - unknown state", { appUser, workOSUser });
+        toast.error("خطأ في تحميل بيانات المستخدم. يرجى تحديث الصفحة والمحاولة مرة أخرى.");
+        return;
+      }
+    }
+    
+    // Ensure we have a valid userId before proceeding
+    if (!effectiveUserId) {
+      console.log("[CreateOrganizationModal] No effective userId after checks");
+      toast.error("خطأ في بيانات المستخدم. يرجى المحاولة مرة أخرى.");
       return;
     }
 
@@ -252,11 +278,11 @@ export function CreateOrganizationModal({
       return;
     }
 
-    console.log("[CreateOrganizationModal] Starting submission");
+    console.log("[CreateOrganizationModal] Starting submission with userId:", effectiveUserId);
     setIsSubmitting(true);
     try {
       const orgId = await createOrganization({
-        userId,
+        userId: effectiveUserId,
         name: formData.name.trim(),
         slug: formData.slug.trim(),
       });

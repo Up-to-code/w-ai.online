@@ -74,6 +74,38 @@ export const getCurrentUser = query({
   },
 });
 
+// Ensure user exists in database (create if missing)
+// This fixes race conditions where WorkOS user exists but app user record doesn't
+export const ensureUserExists = mutation({
+  args: {},
+  handler: async (ctx, _args) => {
+    const authUser = await authKit.getAuthUser(ctx);
+    if (!authUser) {
+      throw new Error("Not authenticated");
+    }
+    
+    // Check if user already exists
+    let user = await ctx.db
+      .query("users")
+      .withIndex("by_auth_id", (q) => q.eq("authId", authUser.id))
+      .first();
+    
+    // Create user if doesn't exist
+    if (!user) {
+      const userId = await ctx.db.insert("users", {
+        authId: authUser.id,
+        email: authUser.email,
+        name: `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() || authUser.email || "User",
+        role: "user",
+        phone: (authUser as any).phoneNumber || (authUser as any).phone || undefined,
+      });
+      user = await ctx.db.get(userId);
+    }
+    
+    return user;
+  },
+});
+
 // Get user by WorkOS auth ID
 export const getByAuthId = query({
   args: { authId: v.string() },
