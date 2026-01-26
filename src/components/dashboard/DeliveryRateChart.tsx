@@ -6,11 +6,11 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 const chartConfig = {
     deliveryRate: {
         label: "معدل التسليم",
-        color: "var(--chart-1)",
+        color: "#10b981",
     },
     readRate: {
         label: "معدل القراءة",
-        color: "var(--chart-2)",
+        color: "#f59e0b",
     },
 } satisfies ChartConfig
 
@@ -48,15 +48,15 @@ export function DeliveryRateChart({ data }: DeliveryRateChartProps) {
                 <Line
                     dataKey="deliveryRate"
                     type="monotone"
-                    stroke="var(--color-deliveryRate)"
-                    strokeWidth={2}
+                    stroke="#10b981"
+                    strokeWidth={3}
                     dot={false}
                 />
                 <Line
                     dataKey="readRate"
                     type="monotone"
-                    stroke="var(--color-readRate)"
-                    strokeWidth={2}
+                    stroke="#f59e0b"
+                    strokeWidth={3}
                     dot={false}
                 />
             </LineChart>

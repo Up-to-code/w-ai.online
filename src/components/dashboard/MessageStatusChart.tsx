@@ -6,19 +6,19 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 const chartConfig = {
     sent: {
         label: "مرسلة",
-        color: "var(--chart-1)",
+        color: "#6366f1",
     },
     delivered: {
         label: "مستلمة",
-        color: "var(--chart-2)",
+        color: "#10b981",
     },
     read: {
         label: "مقروءة",
-        color: "var(--chart-3)",
+        color: "#f59e0b",
     },
     failed: {
         label: "فاشلة",
-        color: "var(--destructive)",
+        color: "#ef4444",
     },
 } satisfies ChartConfig
 
@@ -33,10 +33,10 @@ interface MessageStatusChartProps {
 
 export function MessageStatusChart({ data }: MessageStatusChartProps) {
     const chartData = [
-        { name: "sent", value: data.sent, fill: "var(--color-sent)" },
-        { name: "delivered", value: data.delivered, fill: "var(--color-delivered)" },
-        { name: "read", value: data.read, fill: "var(--color-read)" },
-        { name: "failed", value: data.failed, fill: "var(--color-failed)" },
+        { name: "sent", value: data.sent, fill: "#6366f1" },
+        { name: "delivered", value: data.delivered, fill: "#10b981" },
+        { name: "read", value: data.read, fill: "#f59e0b" },
+        { name: "failed", value: data.failed, fill: "#ef4444" },
     ].filter(item => item.value > 0)
 
     if (chartData.length === 0) {
@@ -62,11 +62,11 @@ export function MessageStatusChart({ data }: MessageStatusChartProps) {
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                 </Pie>
-                <ChartLegend 
-                  content={(props: any) => {
-                    if (!props?.payload) return null
-                    return <ChartLegendContent payload={props.payload} verticalAlign={props.verticalAlign} nameKey="name" />
-                  }} 
+                <ChartLegend
+                    content={(props: any) => {
+                        if (!props?.payload) return null
+                        return <ChartLegendContent payload={props.payload} verticalAlign={props.verticalAlign} nameKey="name" />
+                    }}
                 />
             </PieChart>
         </ChartContainer>

@@ -9,14 +9,17 @@ import { motion } from "framer-motion"
 import {
   MessageSquare,
   ArrowRight,
-  Star,
-  CheckCircle2,
   TrendingUp,
   Zap,
   ShoppingBag,
   Link2,
   Bot,
-  BarChart3,
+  Check,
+  Globe,
+  Smartphone,
+  LayoutDashboard,
+  Megaphone,
+  Workflow
 } from "lucide-react"
 import { useUserContext } from "@/hooks/useUserContext"
 import {
@@ -25,17 +28,34 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AnimatedCounter } from "@/components/landing/AnimatedCounter"
+import { cn } from "@/lib/utils"
 
-// Lazy load components below the fold for better performance
+// Lazy load components
 const FeatureShowcase = lazy(() =>
   import("@/components/landing/FeatureShowcase").then((mod) => ({
     default: mod.FeatureShowcase,
   }))
 )
-const PhoneMockup = lazy(() =>
-  import("@/components/landing/PhoneMockup").then((mod) => ({
-    default: mod.PhoneMockup,
+const DashboardPreview = lazy(() =>
+  import("@/components/landing/DashboardPreview").then((mod) => ({
+    default: mod.DashboardPreview,
+  }))
+)
+const AutomationShowcase = lazy(() =>
+  import("@/components/landing/showcase/AutomationShowcase").then((mod) => ({
+    default: mod.AutomationShowcase,
+  }))
+)
+const CampaignsShowcase = lazy(() =>
+  import("@/components/landing/showcase/CampaignsShowcase").then((mod) => ({
+    default: mod.CampaignsShowcase,
+  }))
+)
+const ChatShowcase = lazy(() =>
+  import("@/components/landing/showcase/ChatShowcase").then((mod) => ({
+    default: mod.ChatShowcase,
   }))
 )
 
@@ -43,56 +63,42 @@ const PhoneMockup = lazy(() =>
 function formatNumber(num: number): string {
   if (num >= 1000000) {
     const millions = num / 1000000
-    if (millions >= 10) {
-      return `${Math.floor(millions)}M+`
-    }
-    return `${millions.toFixed(1)}M+`
+    return millions >= 10 ? `${Math.floor(millions)}M+` : `${millions.toFixed(1)}M+`
   }
   if (num >= 1000) {
     const thousands = num / 1000
-    if (thousands >= 10) {
-      return `${Math.floor(thousands)}K+`
-    }
-    return `${thousands.toFixed(1)}K+`
+    return thousands >= 10 ? `${Math.floor(thousands)}K+` : `${thousands.toFixed(1)}K+`
   }
   return num.toString()
 }
 
-// Animated number with K/M formatting
+// Animated number component
 function AnimatedFormattedNumber({ value, duration = 2000, className = "" }: { value: number; duration?: number; className?: string }) {
   if (!value && value !== 0) return <span className={className}>--</span>
-  
+
+  let displayValue = value
+  let suffix = ""
+  let decimals = 0
+
   if (value >= 1000000) {
     const millions = value / 1000000
-    const displayValue = millions >= 10 ? Math.floor(millions) : parseFloat(millions.toFixed(1))
-    return (
-      <AnimatedCounter
-        value={displayValue}
-        duration={duration}
-        className={className}
-        decimals={millions >= 10 ? 0 : 1}
-        suffix="M+"
-      />
-    )
-  }
-  if (value >= 1000) {
+    displayValue = millions >= 10 ? Math.floor(millions) : parseFloat(millions.toFixed(1))
+    decimals = millions >= 10 ? 0 : 1
+    suffix = "M+"
+  } else if (value >= 1000) {
     const thousands = value / 1000
-    const displayValue = thousands >= 10 ? Math.floor(thousands) : parseFloat(thousands.toFixed(1))
-    return (
-      <AnimatedCounter
-        value={displayValue}
-        duration={duration}
-        className={className}
-        decimals={thousands >= 10 ? 0 : 1}
-        suffix="K+"
-      />
-    )
+    displayValue = thousands >= 10 ? Math.floor(thousands) : parseFloat(thousands.toFixed(1))
+    decimals = thousands >= 10 ? 0 : 1
+    suffix = "K+"
   }
+
   return (
     <AnimatedCounter
-      value={value}
+      value={displayValue}
       duration={duration}
       className={className}
+      decimals={decimals}
+      suffix={suffix}
     />
   )
 }
@@ -101,11 +107,9 @@ export default function LandingPage() {
   const { isLoading, isAuthenticated } = useUserContext()
   const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
-  
-  // Fetch public stats
+
   const publicStats = useQuery(api.publicStats.getPublicStats)
 
-  // Redirect authenticated users to dashboard
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       router.push("/dashboard")
@@ -120,829 +124,387 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Show loading while checking authentication
-  if (isLoading) {
-    return null
-  }
-
-  // Redirect authenticated users
-  if (isAuthenticated) {
-    return null
-  }
+  if (isLoading || isAuthenticated) return null
 
   const pricingPlans = [
     {
       name: "مجاني",
       price: 0,
-      currency: "ريال",
-      features: [
-        "حتى 1,000 رسالة/شهر",
-        "وكيل ذكاء اصطناعي أساسي",
-        "إدارة الحملات",
-        "دعم عبر البريد",
-      ],
-      popular: false,
+      description: "للمتاجر الصغيرة والمبتدئين",
+      features: ["1,000 رسالة/شهر", "بوت ذكي أساسي", "إدارة حملات بسيطة", "دعم فني عبر البريد"],
+      highlight: false
     },
     {
-      name: "بدء التشغيل",
-      price: 69,
-      currency: "ريال",
-      features: [
-        "حتى 5,000 رسالة/شهر",
-        "وكيل ذكاء اصطناعي متقدم",
-        "حملات غير محدودة",
-        "دعم أولوية",
-        "أتمتة مخصصة",
-      ],
-      popular: false,
-    },
-    {
-      name: "احترافي",
+      name: "الأكثر شعبية",
       price: 199,
-      currency: "ريال",
-      features: [
-        "حتى 50,000 رسالة/شهر",
-        "أكثر من 10 مليون رمز للذكاء الاصطناعي",
-        "وكيل ذكاء اصطناعي متقدم",
-        "حملات غير محدودة",
-        "دعم أولوية",
-        "أتمتة مخصصة",
-        "تحليلات متقدمة",
-      ],
-      popular: true,
+      description: "للأعمال المتنامية",
+      features: ["50,000 رسالة/شهر", "ذكاء اصطناعي متطور", "حملات غير محدودة", "ربط مع سلة وزد", "دعم فني مباشر"],
+      highlight: true
     },
     {
-      name: "مؤسسي",
+      name: "مؤسسات",
       price: 999,
-      currency: "ريال",
-      features: [
-        "رسائل غير محدودة",
-        "أكثر من 10 مليون رمز للذكاء الاصطناعي",
-        "وكيل ذكاء اصطناعي متميز",
-        "مدير حساب مخصص",
-        "دعم 24/7",
-        "تكاملات مخصصة",
-        "تحليلات متقدمة",
-      ],
-      popular: false,
-    },
+      description: "للشركات الكبرى",
+      features: ["رسائل لا محدودة", "مدير حساب خاص", "API مخصص", "تخصيص كامل للنظام", "اتفاقية مستوى الخدمة"],
+      highlight: false
+    }
   ]
 
   const faqs = [
-    {
-      question: "هل هناك نسخة تجريبية مجانية؟",
-      answer: "نعم، يمكنك البدء مجاناً بدون بطاقة ائتمان. جرب جميع المميزات لمدة 14 يوماً.",
-    },
-    {
-      question: "كم من الوقت أحتاج للبدء؟",
-      answer: "يمكنك البدء في أقل من 5 دقائق. ربط حساب واتساب للأعمال سهل جداً.",
-    },
-    {
-      question: "هل يمكنني إلغاء الاشتراك في أي وقت؟",
-      answer: "نعم، يمكنك إلغاء الاشتراك في أي وقت بدون رسوم إضافية.",
-    },
-    {
-      question: "ما هي طرق الدفع المقبولة؟",
-      answer: "نقبل جميع بطاقات الائتمان الرئيسية وندعم المدفوعات بالريال السعودي.",
-    },
-    {
-      question: "هل بياناتي آمنة؟",
-      answer: "نعم، نستخدم تشفير SSL ونتابع أعلى معايير الأمان لحماية بياناتك.",
-    },
-    {
-      question: "كيف يمكنني الحصول على الدعم؟",
-      answer: "نوفر دعم فني على مدار الساعة عبر البريد الإلكتروني والدردشة المباشرة.",
-    },
-  ]
-
-  const testimonials = [
-    {
-      text: "زادت مبيعاتنا بنسبة 40% بعد استخدام المنصة. الردود التلقائية ساعدتنا على استقبال طلبات أكثر بكثير.",
-      author: "أحمد محمد",
-      company: "متجر إلكتروني",
-      rating: 5,
-      result: "40% زيادة في المبيعات",
-    },
-    {
-      text: "وفرنا 20 ساعة أسبوعياً. الأتمتة الذكية تعمل لنا 24/7 بدون توقف.",
-      author: "فاطمة علي",
-      company: "شركة تجارية",
-      rating: 5,
-      result: "20 ساعة توفير أسبوعياً",
-    },
-    {
-      text: "زمن الاستجابة انخفض من 5 دقائق إلى 30 ثانية. عملاؤنا سعداء جداً.",
-      author: "خالد سعيد",
-      company: "مؤسسة",
-      rating: 5,
-      result: "30 ثانية وقت رد",
-    },
+    { question: "هل أحتاج لبطاقة ائتمان للتجربة؟", answer: "لا، يمكنك البدء بالتجربة المجانية لمدة 14 يوم بدون أي التزامات." },
+    { question: "هل يمكنني ربط رقمي الحالي؟", answer: "نعم، يمكنك تحويل رقمك الحالي إلى واتساب للأعمال API بسهولة عبر منصتنا." },
+    { question: "ماذا يحدث بعد انتهاء التجربة؟", answer: "يمكنك اختيار الباقة المناسبة لك أو البقاء على الباقة المجانية المحدودة." },
+    { question: "هل تدعمون الربط مع سلة؟", answer: "نعم، لدينا تكامل كامل ومباشر مع منصة سلة لمزامنة الطلبات والعملاء." }
   ]
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      {/* Minimal Header */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
-          scrolled ? "bg-background/95 backdrop-blur-sm border-b border-border" : "bg-background"
-        }`}
-      >
-        <nav className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="text-xl font-bold text-foreground">
-            w-ai.online
+    <div className="min-h-screen bg-background font-sans text-foreground overflow-x-hidden" dir="rtl">
+
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <motion.div
+          animate={{
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, 0],
+            x: [0, 20, 0]
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[-10%] right-[-10%] w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] opacity-60"
+        />
+        <motion.div
+          animate={{
+            scale: [1.2, 1, 1.2],
+            rotate: [0, -5, 0],
+            y: [0, 30, 0]
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute bottom-[-10%] left-[-10%] w-[800px] h-[800px] bg-secondary/40 rounded-full blur-[120px] opacity-50"
+        />
+      </div>
+
+      {/* Header */}
+      <header className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+        scrolled ? "bg-background/80 backdrop-blur-md border-b border-border/50 py-3" : "bg-transparent py-5"
+      )}>
+        <div className="container mx-auto px-4 md:px-6 flex justify-between items-center">
+          <div className="text-2xl font-black tracking-tighter text-primary">w-ai.online</div>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => router.push("/login")} className="hidden md:inline-flex font-bold rounded-[12px]">تسجيل دخول</Button>
+            <Button onClick={() => router.push("/dashboard")} className="font-bold rounded-[12px] px-6 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all">ابدأ الآن مجاناً</Button>
           </div>
-          <Button
-            onClick={() => router.push("/dashboard")}
-            className="bg-primary hover:opacity-90 transition-opacity"
-          >
-            ابدأ مجاناً الآن
-          </Button>
-        </nav>
+        </div>
       </header>
 
-      {/* Hero Section - Sales-Focused */}
-      <section className="pt-32 pb-16 md:pt-40 md:pb-24 px-4 md:px-6 bg-background">
-        <div className="container mx-auto max-w-5xl">
+      {/* Hero Section */}
+      <section className="relative z-10 pt-32 pb-20 md:pt-48 md:pb-32 px-4">
+        <div className="container mx-auto max-w-6xl text-center space-y-8">
           <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-primary text-sm font-bold mb-4"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            منصة متكاملة: حملات، محادثات، وأتمتة 🚀
+          </motion.div>
+
+          <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center space-y-10"
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="text-6xl md:text-8xl lg:text-[100px] font-black tracking-tight leading-[1.05] tracking-[-0.04em]"
           >
-            {/* Trust Signal */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-sm text-muted-foreground"
-            >
-              {publicStats ? (
-                <>موثوق به من قبل أكثر من {formatNumber(publicStats.activeOrganizations || publicStats.totalOrganizations)} شركة</>
-              ) : (
-                <>موثوق به من قبل آلاف الشركات</>
-              )}
-            </motion.p>
+            جهاز تحكم <br className="hidden md:block" />
+            <span className="text-secondary-foreground underline decoration-wavy decoration-primary/20 underline-offset-[12px]">تجارتك الذكية</span>
+          </motion.h1>
 
-            {/* Headline */}
-            <div className="space-y-6">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-foreground leading-tight"
-              >
-                نمّي عملك. زد مبيعاتك.
-                <br />
-                <span className="text-primary">واتساب يرد. سلة تربط. كل شيء يعمل.</span>
-              </motion.h1>
-              
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
-              >
-                واتساب يرد على العملاء تلقائياً. سلة تربط منتجاتك. المحادثات تدير نفسها. المبيعات تزيد وحدها.
-              </motion.p>
-            </div>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-xl md:text-2xl text-muted-foreground/80 max-w-3xl mx-auto leading-relaxed font-medium"
+          >
+            نحن لا نقدم مجرد شات بوت. نحن نبني لك فريق مبيعات ذكي يعمل 24/7 داخل واتساب، يربط مخزونك، يدير حملاتك، ويضاعف أرباحك.
+          </motion.p>
 
-            {/* Prominent Stats Bar */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="flex flex-wrap items-center justify-center gap-8 md:gap-16 pt-6"
-            >
-              <div className="text-center">
-                {publicStats ? (
-                  <>
-                    <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground">
-                      <AnimatedFormattedNumber
-                        value={publicStats.totalMessages}
-                        duration={2000}
-                      />
-                    </div>
-                    <div className="text-sm md:text-base text-muted-foreground mt-2">رسالة مرسلة</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground animate-pulse">--</div>
-                    <div className="text-sm md:text-base text-muted-foreground mt-2">رسالة مرسلة</div>
-                  </>
-                )}
-              </div>
-              <div className="w-px h-16 bg-border hidden md:block"></div>
-              <div className="text-center">
-                <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground">50%</div>
-                <div className="text-sm md:text-base text-muted-foreground mt-2">توفير الوقت</div>
-              </div>
-              <div className="w-px h-16 bg-border hidden md:block"></div>
-              <div className="text-center">
-                {publicStats ? (
-                  <>
-                    <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground">
-                      <AnimatedCounter
-                        value={publicStats.averageDeliveryRate}
-                        duration={2000}
-                        suffix="%"
-                      />
-                    </div>
-                    <div className="text-sm md:text-base text-muted-foreground mt-2">معدل التسليم</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground animate-pulse">--</div>
-                    <div className="text-sm md:text-base text-muted-foreground mt-2">معدل التسليم</div>
-                  </>
-                )}
-              </div>
-            </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
+          >
+            <Button size="lg" onClick={() => router.push("/dashboard")} className="h-14 px-8 rounded-[16px] text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 w-full sm:w-auto transition-all hover:-translate-y-1">
+              ابدأ تجربتك المجانية
+              <ArrowRight className="mr-2 h-5 w-5" />
+            </Button>
+          </motion.div>
 
-            {/* CTA Button */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="pt-6"
-            >
-              <Button
-                size="lg"
-                onClick={() => router.push("/dashboard")}
-                className="text-lg px-12 py-8 bg-primary hover:opacity-90 transition-opacity shadow-lg hover:shadow-xl"
-              >
-                ابدأ مجاناً الآن - وفر 50% من وقتك
-                <ArrowRight className="mr-2 h-5 w-5" />
-              </Button>
-            </motion.div>
+          {/* Integration Logos */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.5 }}
+            className="pt-12 flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500"
+          >
+            <div className="text-xl font-black flex items-center gap-2"><ShoppingBag className="text-primary" /> Salla</div>
+            <div className="text-xl font-black flex items-center gap-2"><Globe className="text-primary" /> Zid</div>
+            <div className="text-xl font-black flex items-center gap-2"><MessageSquare className="text-primary" /> WhatsApp</div>
+            <div className="text-xl font-black flex items-center gap-2"><Zap className="text-primary" /> Zapier</div>
+            <div className="text-xl font-black flex items-center gap-2"><Bot className="text-primary" /> OpenAI</div>
           </motion.div>
         </div>
       </section>
 
-      {/* Social Proof Section */}
-      <section className="py-16 md:py-24 bg-muted/30">
+      <section className="py-32 bg-background relative overflow-hidden section-divider">
         <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center space-y-8"
-          >
-            <div>
-              <h3 className="text-lg md:text-xl text-muted-foreground mb-6">
-                موثوق به من قبل آلاف الشركات
-              </h3>
-              <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
-                <div className="text-center">
-                  {publicStats ? (
-                    <>
-                      <div className="text-4xl md:text-5xl font-bold text-foreground">
-                        <AnimatedFormattedNumber
-                          value={publicStats.activeOrganizations || publicStats.totalOrganizations}
-                          duration={2000}
-                        />
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-1">شركة</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-4xl md:text-5xl font-bold text-foreground animate-pulse">--</div>
-                      <div className="text-sm text-muted-foreground mt-1">شركة</div>
-                    </>
-                  )}
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight">نظرة شاملة من الداخل</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium">أدوات احترافية مصممة لنمو تجارتك دون تعقيد</p>
+          </div>
+
+          <Tabs defaultValue="automation" className="w-full max-w-6xl mx-auto" dir="rtl">
+            <TabsList className="grid w-full grid-cols-3 h-auto p-1.5 bg-muted/40 rounded-[24px] mb-16 border border-border/10">
+              <TabsTrigger value="automation" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-lg py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
+                <LayoutDashboard className="h-5 w-5" />
+                الأتمتة
+              </TabsTrigger>
+              <TabsTrigger value="campaigns" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-lg py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
+                <Megaphone className="h-5 w-5" />
+                الحملات
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-primary data-[state=active]:shadow-lg py-5 rounded-[20px] font-bold text-lg gap-3 transition-all hover:bg-white/40">
+                <MessageSquare className="h-5 w-5" />
+                المحادثات
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="automation" className="mt-0">
+              <Suspense fallback={<div className="h-[500px] w-full bg-muted animate-pulse rounded-[24px]" />}>
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                  <div className="space-y-6">
+                    <h3 className="text-3xl font-black">ابنِ بوت ذكي في دقائق</h3>
+                    <p className="text-lg text-muted-foreground leading-relaxed">
+                      محرر مرئي سهل السحب والإفلات. صمم تدفقات المحادثة، الردود التلقائية، وإسناد العملاء للموظفين دون كتابة سطر كود واحد.
+                    </p>
+                    <ul className="space-y-3">
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> قوالب جاهزة للسلات المتروكة</li>
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> ردود تلقائية 24/7</li>
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> تكامل مباشر مع متجرك</li>
+                    </ul>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full opacity-20 pointer-events-none" />
+                    <AutomationShowcase />
+                  </div>
                 </div>
-                <div className="w-px h-12 bg-border"></div>
-                <div className="text-center">
-                  {publicStats ? (
-                    <>
-                      <div className="text-4xl md:text-5xl font-bold text-foreground">
-                        <AnimatedFormattedNumber
-                          value={publicStats.totalMessages}
-                          duration={2000}
-                        />
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-1">رسالة مرسلة</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-4xl md:text-5xl font-bold text-foreground animate-pulse">--</div>
-                      <div className="text-sm text-muted-foreground mt-1">رسالة مرسلة</div>
-                    </>
-                  )}
+              </Suspense>
+            </TabsContent>
+
+            <TabsContent value="campaigns" className="mt-0">
+              <Suspense fallback={<div className="h-[500px] w-full bg-muted animate-pulse rounded-[24px]" />}>
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                  <div className="relative order-2 md:order-1">
+                    <div className="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full opacity-20 pointer-events-none" />
+                    <CampaignsShowcase />
+                  </div>
+                  <div className="space-y-6 order-1 md:order-2">
+                    <h3 className="text-3xl font-black">حملات تصل لآلاف العملاء</h3>
+                    <p className="text-lg text-muted-foreground leading-relaxed">
+                      أطلق حملات واتساب تسويقية دقيقة الاستهداف. راقب معدلات الوصول والقراءة في الوقت الفعلي وحسن نتائجك باستمرار.
+                    </p>
+                    <ul className="space-y-3">
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> تقسيم ذكي للجمهور</li>
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> تقارير أداء مفصلة</li>
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> جدولة الحملات مستقبلاً</li>
+                    </ul>
+                  </div>
                 </div>
-                <div className="w-px h-12 bg-border"></div>
-                <div className="text-center">
-                  {publicStats ? (
-                    <>
-                      <div className="text-4xl md:text-5xl font-bold text-foreground">
-                        <AnimatedCounter
-                          value={publicStats.averageDeliveryRate}
-                          duration={2000}
-                          suffix="%"
-                        />
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-1">معدل التسليم</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-4xl md:text-5xl font-bold text-foreground animate-pulse">--</div>
-                      <div className="text-sm text-muted-foreground mt-1">معدل التسليم</div>
-                    </>
-                  )}
+              </Suspense>
+            </TabsContent>
+
+            <TabsContent value="chat" className="mt-0">
+              <Suspense fallback={<div className="h-[500px] w-full bg-muted animate-pulse rounded-[24px]" />}>
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                  <div className="space-y-6">
+                    <h3 className="text-3xl font-black">صندوق وارد واحد للجميع</h3>
+                    <p className="text-lg text-muted-foreground leading-relaxed">
+                      لا تفقد أي رسالة. جميع محادثات واتساب في مكان واحد، مع إمكانية توزيع المحادثات على فريق العمل واستخدام الردود السريعة والذكاء الاصطناعي.
+                    </p>
+                    <ul className="space-y-3">
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> دعم فني أسرع بـ 3 مرات</li>
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> أدوات تعاون فريقي</li>
+                      <li className="flex items-center gap-3 font-medium"><Check className="text-primary h-5 w-5" /> مساعد ذكي يكتب الردود عنك</li>
+                    </ul>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-green-500/20 blur-[100px] rounded-full opacity-20 pointer-events-none" />
+                    <ChatShowcase />
+                  </div>
+                </div>
+              </Suspense>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </section>
+
+      {/* Main Feature Highlight (Dashboard Preview) - "Command Center" vibe */}
+      <section className="py-24 bg-muted/20">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            <div className="flex-1 space-y-8 text-center lg:text-right">
+              <div className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary font-bold text-sm mb-2">لوحة التحكم المركزية</div>
+              <h2 className="text-4xl md:text-5xl font-black leading-tight">
+                إدارتك الكاملة <br />
+                <span className="text-primary">في شاشة واحدة</span>
+              </h2>
+              <p className="text-xl text-muted-foreground">
+                نظرة شاملة على مبيعاتك، رسائلك، وأداء فريقك. اتخذ قرارات مبنية على بيانات حقيقية وليس تخمينات.
+              </p>
+              <div className="grid grid-cols-2 gap-4 pt-4">
+                <div className="bg-background p-4 rounded-[16px] border border-border/50 text-center">
+                  <div className="text-3xl font-black text-foreground">100%</div>
+                  <div className="text-sm text-muted-foreground mt-1">رؤية شاملة</div>
+                </div>
+                <div className="bg-background p-4 rounded-[16px] border border-border/50 text-center">
+                  <div className="text-3xl font-black text-foreground">0</div>
+                  <div className="text-sm text-muted-foreground mt-1">تعقيد تقني</div>
                 </div>
               </div>
             </div>
-          </motion.div>
+            <div className="flex-1 w-full flex justify-center">
+              <Suspense fallback={<div className="w-full max-w-lg h-[400px] bg-muted rounded-[32px] animate-pulse" />}>
+                <DashboardPreview />
+              </Suspense>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Integration Icons Section */}
-      <section className="py-24 md:py-32 bg-background">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              اربط منصاتك المفضلة
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              تكامل سهل مع أكبر المنصات
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto"
-          >
-            <div className="text-center p-6 rounded-xl bg-muted/30">
-              <div className="w-16 h-16 rounded-xl bg-[#004D3D] flex items-center justify-center mx-auto mb-4">
-                <ShoppingBag className="h-8 w-8 text-white" />
+      {/* Stats Cards - Glassmorphism */}
+      <section className="py-20 bg-background relative z-10">
+        <div className="container mx-auto px-4">
+          <div className="p-4 md:p-8 rounded-[32px] bg-primary text-white shadow-2xl overflow-hidden relative">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-[80px] pointer-events-none" />
+
+            <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 divide-x divide-x-reverse divide-white/20">
+              <div className="text-center space-y-2">
+                <div className="text-4xl md:text-5xl font-black">
+                  {publicStats ? <AnimatedFormattedNumber value={publicStats.totalMessages} /> : "--"}
+                </div>
+                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">رسالة تم معالجتها</div>
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-2">سلة</h3>
-              <p className="text-sm text-muted-foreground">اربط متجرك الإلكتروني</p>
-            </div>
-            <div className="text-center p-6 rounded-xl bg-muted/30">
-              <div className="w-16 h-16 rounded-xl bg-[#128C7E] flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="h-8 w-8 text-white" />
+              <div className="text-center space-y-2">
+                <div className="text-4xl md:text-5xl font-black">
+                  {publicStats ? <AnimatedFormattedNumber value={publicStats.activeOrganizations || 1500} /> : "--"}
+                </div>
+                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">متجر يثق بنا</div>
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-2">واتساب</h3>
-              <p className="text-sm text-muted-foreground">واتساب للأعمال</p>
-            </div>
-            <div className="text-center p-6 rounded-xl bg-muted/30">
-              <div className="w-16 h-16 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
-                <Link2 className="h-8 w-8 text-white" />
+              <div className="text-center space-y-2">
+                <div className="text-4xl md:text-5xl font-black">50M+</div>
+                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">إشعار مُرسل</div>
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-2">تكاملات أخرى</h3>
-              <p className="text-sm text-muted-foreground">اربط منصاتك بسهولة</p>
+              <div className="text-center space-y-2">
+                <div className="text-4xl md:text-5xl font-black">99.9%</div>
+                <div className="text-sm font-bold opacity-80 uppercase tracking-wider">جاهزية النظام</div>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Features - What You Get */}
-      <Suspense
-        fallback={
-          <section className="py-20">
-            <div className="container mx-auto px-4">
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="border border-border rounded-2xl p-6 bg-background animate-pulse"
-                  >
-                    <div className="h-12 w-12 rounded-xl bg-muted mb-4"></div>
-                    <div className="h-6 bg-muted rounded w-32 mb-2"></div>
-                    <div className="h-4 bg-muted rounded w-full mb-1"></div>
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        }
-      >
-        <FeatureShowcase />
-      </Suspense>
-
-      {/* How It Works Section */}
-      <section className="py-24 md:py-32 bg-background">
+      {/* New Pricing Section */}
+      <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              كيف يعمل
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              ابدأ في 4 خطوات بسيطة
-            </p>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto"
-          >
-            {[
-              {
-                number: 1,
-                title: "اربط حسابك",
-                description: "اتصل بواتساب للأعمال في دقائق",
-                icon: Link2,
-              },
-              {
-                number: 2,
-                title: "أضف منتجاتك",
-                description: "اربط مع سلة أو أضف منتجاتك يدوياً",
-                icon: ShoppingBag,
-              },
-              {
-                number: 3,
-                title: "أتمت الردود",
-                description: "ذكاء اصطناعي يرد على العملاء تلقائياً",
-                icon: Bot,
-              },
-              {
-                number: 4,
-                title: "راقب النتائج",
-                description: "تتبع المبيعات والأداء في الوقت الفعلي",
-                icon: BarChart3,
-              },
-            ].map((step, index) => {
-              const Icon = step.icon
-              return (
-                <motion.div
-                  key={step.number}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.3 + index * 0.1 }}
-                  className="text-center"
-                >
-                  <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-                    {step.number}
-                  </div>
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-lg font-bold text-foreground mb-2">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground">{step.description}</p>
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </div>
-      </section>
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            <h2 className="text-4xl font-black">خطط أسعار بسيطة وشفافة</h2>
+            <p className="text-xl text-muted-foreground">ابدأ مجاناً، وادفع فقط عندما تنمو.</p>
+          </div>
 
-      {/* Phone Mockup - See It Work */}
-      <Suspense
-        fallback={
-          <section className="py-32 bg-background">
-            <div className="container mx-auto px-4 md:px-6">
-              <div className="text-center mb-16">
-                <div className="h-8 bg-muted rounded w-64 mx-auto mb-4 animate-pulse"></div>
-                <div className="h-6 bg-muted rounded w-96 mx-auto animate-pulse"></div>
-              </div>
-              <div className="flex justify-center">
-                <div className="h-[600px] w-[300px] bg-muted/5 rounded-[2.5rem] animate-pulse"></div>
-              </div>
-            </div>
-          </section>
-        }
-      >
-        <PhoneMockup />
-      </Suspense>
-
-      {/* Numbers Showcase Section */}
-      <section className="py-24 md:py-32 bg-muted/20">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              أرقام تتحدث عن نفسها
-            </h2>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto"
-          >
-            <div className="text-center">
-              {publicStats ? (
-                <>
-                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2">
-                    <AnimatedFormattedNumber
-                      value={publicStats.totalMessages}
-                      duration={2000}
-                    />
-                  </div>
-                  <div className="text-sm md:text-base text-muted-foreground">رسالة مرسلة</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2 animate-pulse">--</div>
-                  <div className="text-sm md:text-base text-muted-foreground">رسالة مرسلة</div>
-                </>
-              )}
-            </div>
-            <div className="text-center">
-              {publicStats ? (
-                <>
-                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2">
-                    <AnimatedFormattedNumber
-                      value={publicStats.activeOrganizations || publicStats.totalOrganizations}
-                      duration={2000}
-                    />
-                  </div>
-                  <div className="text-sm md:text-base text-muted-foreground">شركة نشطة</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2 animate-pulse">--</div>
-                  <div className="text-sm md:text-base text-muted-foreground">شركة نشطة</div>
-                </>
-              )}
-            </div>
-            <div className="text-center">
-              {publicStats ? (
-                <>
-                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2">
-                    <AnimatedFormattedNumber
-                      value={publicStats.totalCampaigns}
-                      duration={2000}
-                    />
-                  </div>
-                  <div className="text-sm md:text-base text-muted-foreground">حملة</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2 animate-pulse">--</div>
-                  <div className="text-sm md:text-base text-muted-foreground">حملة</div>
-                </>
-              )}
-            </div>
-            <div className="text-center">
-              {publicStats ? (
-                <>
-                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2">
-                    <AnimatedCounter
-                      value={publicStats.averageDeliveryRate}
-                      duration={2000}
-                      suffix="%"
-                    />
-                  </div>
-                  <div className="text-sm md:text-base text-muted-foreground">معدل التسليم</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-5xl md:text-6xl lg:text-7xl font-bold text-primary mb-2 animate-pulse">--</div>
-                  <div className="text-sm md:text-base text-muted-foreground">معدل التسليم</div>
-                </>
-              )}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Testimonials - Success Stories */}
-      <section className="py-24 md:py-32 bg-background">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              نتائج حقيقية من عملائنا
-            </h2>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {testimonials.map((testimonial, i) => (
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {pricingPlans.map((plan, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.6, delay: i * 0.1 }}
-                className="rounded-xl p-6 bg-muted/30"
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className={cn(
+                  "relative p-8 rounded-[24px] border",
+                  plan.highlight
+                    ? "bg-white dark:bg-slate-900 border-primary shadow-2xl scale-105 z-10"
+                    : "bg-background border-border hover:border-primary/50 transition-colors"
+                )}
               >
-                <div className="space-y-4">
-                  {testimonial.result && (
-                    <div className="text-2xl font-bold text-primary mb-2">
-                      {testimonial.result}
-                    </div>
-                  )}
-                  <p className="text-sm text-muted-foreground leading-relaxed text-right">
-                    "{testimonial.text}"
-                  </p>
-                  <div className="pt-4 border-t border-border space-y-1 text-right">
-                    <div className="font-semibold text-foreground">
-                      {testimonial.author}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {testimonial.company}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* Pricing - Sales-Focused */}
-      <section className="py-24 md:py-32 bg-muted/20">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              خطط تناسب كل احتياج
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              ابدأ مجاناً وارتقِ حسب نمو عملك
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto"
-          >
-            {pricingPlans.map((plan, index) => (
-              <div
-                key={index}
-                className={`h-full rounded-xl p-6 transition-all duration-300 ${
-                  plan.popular
-                    ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                    : "bg-background"
-                }`}
-              >
-                {plan.popular && (
-                  <div className="text-center mb-3">
-                    <span className="text-xs font-semibold bg-white/20 px-3 py-1 rounded-full">
-                      الأكثر شعبية
-                    </span>
+                {plan.highlight && (
+                  <div className="absolute top-0 inset-x-0 -mt-4 text-center">
+                    <span className="bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">الأكثر اختياراً</span>
                   </div>
                 )}
-                <div className="text-center mb-6">
-                  <h3 className={`text-xl font-bold mb-4 ${plan.popular ? "text-white" : ""}`}>
-                    {plan.name}
-                  </h3>
-                  <div className="mb-2">
-                    <span className={`text-4xl font-bold ${plan.popular ? "text-white" : ""}`}>
-                      {plan.price}
-                    </span>
-                    <span className={`mr-2 ${plan.popular ? "text-white/80" : "text-muted-foreground"}`}>
-                      {" "}
-                      {plan.currency}
-                    </span>
+                <div className="text-center space-y-4 mb-8">
+                  <h3 className="text-xl font-bold">{plan.name}</h3>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-4xl font-black">{plan.price}</span>
+                    <span className="text-muted-foreground font-medium">ريال / شهرياً</span>
                   </div>
-                  <span className={`text-sm ${plan.popular ? "text-white/80" : "text-muted-foreground"}`}>
-                    /شهر
-                  </span>
+                  <p className="text-sm text-muted-foreground">{plan.description}</p>
                 </div>
-                <ul className="space-y-3 text-right mb-6">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <CheckCircle2 className={`h-5 w-5 shrink-0 mt-0.5 ${plan.popular ? "text-white" : "text-primary"}`} />
-                      <span className={`text-sm ${plan.popular ? "text-white/90" : ""}`}>
-                        {feature}
-                      </span>
+                <ul className="space-y-4 mb-8">
+                  {plan.features.map((feat, j) => (
+                    <li key={j} className="flex items-center gap-3 text-sm font-medium">
+                      <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <Check className="w-3 h-3" />
+                      </div>
+                      {feat}
                     </li>
                   ))}
                 </ul>
                 <Button
-                  className="w-full"
-                  variant={plan.popular ? "secondary" : "default"}
-                  onClick={() => router.push("/dashboard")}
+                  className={cn(
+                    "w-full h-12 rounded-[16px] font-bold",
+                    plan.highlight ? "bg-primary hover:bg-primary/90" : "bg-muted text-foreground hover:bg-slate-200 dark:hover:bg-slate-800"
+                  )}
                 >
-                  {plan.price === 0 ? "ابدأ مجاناً الآن" : "اختر الخطة وابدأ"}
+                  {plan.price === 0 ? "ابدأ مجاناً" : "اشترك الآن"}
                 </Button>
-              </div>
+              </motion.div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-
-      {/* FAQ - Your Questions */}
-      <section className="py-24 md:py-32 bg-background">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              أسئلة شائعة
-            </h2>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="max-w-3xl mx-auto"
-          >
-            <Accordion type="single" collapsible className="w-full" dir="rtl">
-              {faqs.map((faq, index) => (
-                <AccordionItem key={index} value={`item-${index}`}>
-                  <AccordionTrigger className="text-right">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-right text-muted-foreground">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </motion.div>
+      {/* FAQ Section */}
+      <section className="py-24">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <h2 className="text-3xl font-black text-center mb-12">أسئلة شائعة</h2>
+          <Accordion type="single" collapsible className="w-full space-y-4">
+            {faqs.map((faq, i) => (
+              <AccordionItem key={i} value={`item-${i}`} className="border rounded-[16px] px-6 data-[state=open]:bg-muted/30">
+                <AccordionTrigger className="text-right font-bold py-6 hover:no-underline">{faq.question}</AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-lg leading-relaxed pb-6 text-right">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </section>
 
-      {/* Final CTA - Sales-Focused */}
-      <section className="py-24 md:py-32 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 md:px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.6 }}
-            className="text-center space-y-8 max-w-3xl mx-auto"
-          >
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold">
-              ابدأ الآن ووفر 50% من وقتك
-            </h2>
-            <p className="text-xl md:text-2xl text-primary-foreground/90">
-              {publicStats ? (
-                <>
-                  انضم إلى أكثر من{" "}
-                  <AnimatedFormattedNumber
-                    value={publicStats.activeOrganizations || publicStats.totalOrganizations}
-                    duration={2000}
-                  />{" "}
-                  شركة تستخدم منصتنا
-                </>
-              ) : (
-                <>انضم إلى آلاف الشركات تستخدم منصتنا</>
-              )}
-            </p>
-            <div className="pt-4">
-              <Button
-                size="lg"
-                onClick={() => router.push("/dashboard")}
-                className="text-lg px-12 py-8 bg-white text-primary hover:bg-white/90 transition-opacity shadow-xl"
-              >
-                ابدأ مجاناً الآن - لا تفوت الفرصة
-                <ArrowRight className="mr-2 h-5 w-5" />
-              </Button>
-            </div>
-            <p className="text-sm text-primary-foreground/80">
-              بدون بطاقة ائتمان • إلغاء في أي وقت • دعم 24/7 • ابدأ في 5 دقائق
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Minimal Footer */}
-      <footer className="border-t py-8 bg-background">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="text-center">
-            <div className="text-lg font-bold text-foreground mb-2">w-ai.online</div>
-            <div className="text-sm text-muted-foreground">
-              © 2024 w-ai.online. جميع الحقوق محفوظة.
-            </div>
+      {/* Footer */}
+      <footer className="py-12 border-t border-border bg-muted/10">
+        <div className="container mx-auto px-4 text-center space-y-8">
+          <div className="text-2xl font-black text-primary">w-ai.online</div>
+          <div className="flex justify-center gap-8 text-muted-foreground font-medium">
+            <a href="#" className="hover:text-primary transition-colors">عن المنصة</a>
+            <a href="#" className="hover:text-primary transition-colors">الأسعار</a>
+            <a href="#" className="hover:text-primary transition-colors">الشروط والأحكام</a>
+            <a href="#" className="hover:text-primary transition-colors">اتصل بنا</a>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            © 2026 جميع الحقوق محفوظة
           </div>
         </div>
       </footer>

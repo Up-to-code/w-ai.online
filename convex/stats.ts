@@ -12,10 +12,10 @@ const getMessagesInRange = async (
 ) => {
     return await ctx.db
         .query("messages")
-        .withIndex("by_org_timestamp", (q) => 
+        .withIndex("by_org_timestamp", (q) =>
             q.eq("organizationId", orgId)
-             .gte("timestamp", startTime)
-             .lt("timestamp", endTime)
+                .gte("timestamp", startTime)
+                .lt("timestamp", endTime)
         )
         .collect();
 };
@@ -42,10 +42,10 @@ const getContactsInRange = async (
 ) => {
     return await ctx.db
         .query("contacts")
-        .withIndex("by_org_createdAt", (q) => 
+        .withIndex("by_org_createdAt", (q) =>
             q.eq("organizationId", orgId)
-             .gte("createdAt", startTime)
-             .lt("createdAt", endTime)
+                .gte("createdAt", startTime)
+                .lt("createdAt", endTime)
         )
         .collect();
 };
@@ -59,10 +59,10 @@ const getCampaignsInRange = async (
 ) => {
     return await ctx.db
         .query("campaigns")
-        .withIndex("by_org_createdAt", (q) => 
+        .withIndex("by_org_createdAt", (q) =>
             q.eq("organizationId", orgId)
-             .gte("createdAt", startTime)
-             .lt("createdAt", endTime)
+                .gte("createdAt", startTime)
+                .lt("createdAt", endTime)
         )
         .collect();
 };
@@ -70,11 +70,11 @@ const getCampaignsInRange = async (
 // Helper function: Calculate date range from period
 const calculateDateRange = (period?: string, startDate?: number, endDate?: number) => {
     const now = Date.now();
-    
+
     if (startDate && endDate) {
         return { start: startDate, end: endDate };
     }
-    
+
     switch (period) {
         case "7d":
             return { start: now - (7 * 24 * 60 * 60 * 1000), end: now };
@@ -89,7 +89,7 @@ const calculateDateRange = (period?: string, startDate?: number, endDate?: numbe
 };
 
 export const getDashboardStats = query({
-    args: { 
+    args: {
         userId: v.optional(v.id("users")), // Backward compatibility
         organizationId: v.optional(v.id("organizations")), // Multi-tenant: organization that owns stats
         startDate: v.optional(v.number()), // Timestamp
@@ -98,7 +98,8 @@ export const getDashboardStats = query({
             v.literal("7d"),
             v.literal("30d"),
             v.literal("90d"),
-            v.literal("all")
+            v.literal("all"),
+            v.literal("custom")
         ))
     },
     handler: async (ctx, args) => {
@@ -108,7 +109,7 @@ export const getDashboardStats = query({
             const user = await ctx.db.get(args.userId);
             orgId = user?.currentOrganizationId;
         }
-        
+
         if (!orgId) {
             // Return empty stats if no organization
             return {
@@ -138,7 +139,7 @@ export const getDashboardStats = query({
         // Calculate date range from period or custom dates
         const dateRange = calculateDateRange(args.period, args.startDate, args.endDate);
         const now = Date.now();
-        
+
         // For trends, we need 14 days of data (7 current + 7 previous)
         const trendPeriodStart = Math.max(dateRange.start, now - (14 * 24 * 60 * 60 * 1000));
 
@@ -200,13 +201,20 @@ export const getDashboardStats = query({
             };
         }));
 
-        // Generate chart data based on period
         const dayNames = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-        const chartDays = args.period === "30d" ? 30 : args.period === "90d" ? 90 : 7;
+        // Generate chart data based on period
+        let chartDays = args.period === "30d" ? 30 : args.period === "90d" ? 90 : 7;
+
+        if (args.startDate && args.endDate) {
+            const diffTime = Math.abs(args.endDate - args.startDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            chartDays = Math.min(diffDays, 120); // Cap at 120 days for chart performance
+        }
+
         const today = new Date();
         const chartDates = Array.from({ length: chartDays }, (_, i) => {
-            const d = new Date();
-            d.setDate(today.getDate() - (chartDays - 1 - i));
+            const d = new Date(args.endDate || today);
+            d.setDate(d.getDate() - (chartDays - 1 - i));
             return d;
         });
 
@@ -218,19 +226,19 @@ export const getDashboardStats = query({
                 dayStart.setHours(0, 0, 0, 0);
                 const dayEnd = new Date(date);
                 dayEnd.setHours(23, 59, 59, 999);
-                const dayCampaigns = periodCampaigns.filter(c => 
+                const dayCampaigns = periodCampaigns.filter(c =>
                     c.createdAt >= dayStart.getTime() && c.createdAt <= dayEnd.getTime()
                 );
 
                 const inbound = dayMessages.filter(m => m.direction === "inbound").length;
                 const outbound = dayMessages.filter(m => m.direction === "outbound").length;
-                const delivered = dayMessages.filter(m => 
+                const delivered = dayMessages.filter(m =>
                     m.direction === "outbound" && (m.status === "delivered" || m.status === "read")
                 ).length;
-                const read = dayMessages.filter(m => 
+                const read = dayMessages.filter(m =>
                     m.direction === "outbound" && m.status === "read"
                 ).length;
-                const failed = dayMessages.filter(m => 
+                const failed = dayMessages.filter(m =>
                     m.direction === "outbound" && m.status === "failed"
                 ).length;
                 const deliveryRate = outbound > 0 ? (delivered / outbound) * 100 : 0;
@@ -258,13 +266,13 @@ export const getDashboardStats = query({
         // Calculate Rates (using periodMessages)
         const totalOutbound = periodMessages.filter(m => m.direction === "outbound").length;
         const totalInbound = periodMessages.filter(m => m.direction === "inbound").length;
-        const deliveredMessages = periodMessages.filter(m => 
+        const deliveredMessages = periodMessages.filter(m =>
             m.direction === "outbound" && (m.status === "delivered" || m.status === "read")
         ).length;
-        const readMessages = periodMessages.filter(m => 
+        const readMessages = periodMessages.filter(m =>
             m.direction === "outbound" && m.status === "read"
         ).length;
-        const failedMessages = periodMessages.filter(m => 
+        const failedMessages = periodMessages.filter(m =>
             m.direction === "outbound" && m.status === "failed"
         ).length;
 
@@ -287,50 +295,50 @@ export const getDashboardStats = query({
         // Messages trend
         const currentMessagesCount = currentPeriodMessages.length;
         const previousMessagesCount = previousPeriodMessages.length;
-        const totalMessagesTrend = previousMessagesCount > 0 
-            ? ((currentMessagesCount - previousMessagesCount) / previousMessagesCount) * 100 
+        const totalMessagesTrend = previousMessagesCount > 0
+            ? ((currentMessagesCount - previousMessagesCount) / previousMessagesCount) * 100
             : (currentMessagesCount > 0 ? 100 : 0);
 
         // Contacts trend
-        const currentContactsCount = periodContacts.filter(c => 
+        const currentContactsCount = periodContacts.filter(c =>
             (c.createdAt || 0) >= currentPeriodStart
         ).length;
         const previousContactsCount = periodContacts.filter(c => {
             const contactTime = c.createdAt || 0;
             return contactTime >= previousPeriodStart && contactTime < previousPeriodEnd;
         }).length;
-        const totalContactsTrend = previousContactsCount > 0 
-            ? ((currentContactsCount - previousContactsCount) / previousContactsCount) * 100 
+        const totalContactsTrend = previousContactsCount > 0
+            ? ((currentContactsCount - previousContactsCount) / previousContactsCount) * 100
             : (currentContactsCount > 0 ? 100 : 0);
 
         // Delivery rate trend
         const currentOutboundCount = currentPeriodMessages.filter(m => m.direction === "outbound").length;
-        const currentDeliveredCount = currentPeriodMessages.filter(m => 
+        const currentDeliveredCount = currentPeriodMessages.filter(m =>
             m.direction === "outbound" && (m.status === "delivered" || m.status === "read")
         ).length;
         const currentDeliveryRate = currentOutboundCount > 0 ? (currentDeliveredCount / currentOutboundCount) * 100 : 0;
 
         const previousOutboundCount = previousPeriodMessages.filter(m => m.direction === "outbound").length;
-        const previousDeliveredCount = previousPeriodMessages.filter(m => 
+        const previousDeliveredCount = previousPeriodMessages.filter(m =>
             m.direction === "outbound" && (m.status === "delivered" || m.status === "read")
         ).length;
         const previousDeliveryRate = previousOutboundCount > 0 ? (previousDeliveredCount / previousOutboundCount) * 100 : 0;
-        const deliveryRateTrend = previousDeliveryRate > 0 
-            ? currentDeliveryRate - previousDeliveryRate 
+        const deliveryRateTrend = previousDeliveryRate > 0
+            ? currentDeliveryRate - previousDeliveryRate
             : (currentDeliveryRate > 0 ? currentDeliveryRate : 0);
 
         // Read rate trend
-        const currentReadCount = currentPeriodMessages.filter(m => 
+        const currentReadCount = currentPeriodMessages.filter(m =>
             m.direction === "outbound" && m.status === "read"
         ).length;
         const currentReadRate = currentDeliveredCount > 0 ? (currentReadCount / currentDeliveredCount) * 100 : 0;
 
-        const previousReadCount = previousPeriodMessages.filter(m => 
+        const previousReadCount = previousPeriodMessages.filter(m =>
             m.direction === "outbound" && m.status === "read"
         ).length;
         const previousReadRate = previousDeliveredCount > 0 ? (previousReadCount / previousDeliveredCount) * 100 : 0;
-        const readRateTrend = previousReadRate > 0 
-            ? currentReadRate - previousReadRate 
+        const readRateTrend = previousReadRate > 0
+            ? currentReadRate - previousReadRate
             : (currentReadRate > 0 ? currentReadRate : 0);
 
         // Message status breakdown

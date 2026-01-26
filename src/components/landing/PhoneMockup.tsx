@@ -14,12 +14,12 @@ const screens = [
     content: (
       <div className="space-y-4 p-4">
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-primary/10 rounded-lg p-3">
+          <div className="bg-primary/10 rounded-[12px] p-3">
             <div className="text-xs text-muted-foreground mb-1">الرسائل</div>
             <div className="text-lg font-bold text-foreground">12.5K</div>
             <div className="text-xs text-primary mt-1">↑ 23%</div>
           </div>
-          <div className="bg-primary/10 rounded-lg p-3">
+          <div className="bg-primary/10 rounded-[12px] p-3">
             <div className="text-xs text-muted-foreground mb-1">الحملات</div>
             <div className="text-lg font-bold text-foreground">48</div>
             <div className="text-xs text-primary mt-1">نشطة</div>
@@ -27,7 +27,7 @@ const screens = [
         </div>
         <div className="space-y-2">
           <div className="text-xs font-semibold text-foreground">الأداء الأسبوعي</div>
-          <div className="h-24 bg-muted/30 rounded-lg flex items-end gap-1 p-2">
+          <div className="h-24 bg-muted/30 rounded-[12px] flex items-end gap-1 p-2">
             {[65, 80, 45, 90, 70, 85, 75].map((height, i) => (
               <div
                 key={i}
@@ -49,7 +49,7 @@ const screens = [
         <div className="flex gap-2 items-start">
           <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="bg-muted rounded-lg p-2.5">
+            <div className="bg-muted rounded-[12px] p-2.5">
               <div className="h-2 bg-foreground/20 rounded w-3/4 mb-1.5" />
               <div className="h-2 bg-foreground/20 rounded w-1/2" />
             </div>
@@ -58,7 +58,7 @@ const screens = [
         </div>
         <div className="flex gap-2 items-start justify-end">
           <div className="flex-1 space-y-2">
-            <div className="bg-primary rounded-lg p-2.5 ml-auto max-w-[80%]">
+            <div className="bg-primary rounded-[12px] p-2.5 ml-auto max-w-[80%]">
               <div className="h-2 bg-white/90 rounded w-full mb-1.5" />
               <div className="h-2 bg-white/90 rounded w-2/3" />
             </div>
@@ -69,7 +69,7 @@ const screens = [
         <div className="flex gap-2 items-start">
           <div className="w-8 h-8 rounded-full bg-primary/20 flex-shrink-0" />
           <div className="flex-1 space-y-2">
-            <div className="bg-muted rounded-lg p-2.5">
+            <div className="bg-muted rounded-[12px] p-2.5">
               <div className="h-2 bg-foreground/20 rounded w-2/3 mb-1.5" />
               <div className="h-2 bg-foreground/20 rounded w-1/2" />
             </div>
@@ -85,7 +85,7 @@ const screens = [
     icon: Zap,
     content: (
       <div className="space-y-3 p-4">
-        <div className="bg-muted/30 rounded-lg p-3 border-r-4 border-primary">
+        <div className="bg-muted/30 rounded-[12px] p-3 border-r-4 border-primary">
           <div className="flex items-center justify-between mb-2">
             <div className="h-3 bg-foreground/30 rounded w-24" />
             <div className="h-2 bg-primary/50 rounded w-12" />
@@ -93,7 +93,7 @@ const screens = [
           <div className="h-2 bg-foreground/10 rounded w-full mb-1" />
           <div className="h-2 bg-foreground/10 rounded w-3/4" />
         </div>
-        <div className="bg-muted/30 rounded-lg p-3 border-r-4 border-primary">
+        <div className="bg-muted/30 rounded-[12px] p-3 border-r-4 border-primary">
           <div className="flex items-center justify-between mb-2">
             <div className="h-3 bg-foreground/30 rounded w-28" />
             <div className="h-2 bg-primary/50 rounded w-16" />
@@ -101,7 +101,7 @@ const screens = [
           <div className="h-2 bg-foreground/10 rounded w-full mb-1" />
           <div className="h-2 bg-foreground/10 rounded w-2/3" />
         </div>
-        <div className="bg-muted/30 rounded-lg p-3 border-r-4 border-primary">
+        <div className="bg-muted/30 rounded-[12px] p-3 border-r-4 border-primary">
           <div className="flex items-center justify-between mb-2">
             <div className="h-3 bg-foreground/30 rounded w-20" />
             <div className="h-2 bg-primary/50 rounded w-10" />
@@ -159,7 +159,7 @@ export const PhoneMockup = memo(function PhoneMockup() {
           <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-900 border-[14px] rounded-[2.5rem] h-[600px] w-[300px] shadow-2xl">
             {/* Notch */}
             <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute z-20"></div>
-            
+
             {/* Side buttons */}
             <div className="h-[32px] w-[3px] bg-gray-800 absolute -left-[17px] top-[72px] rounded-l-lg"></div>
             <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
@@ -200,11 +200,10 @@ export const PhoneMockup = memo(function PhoneMockup() {
                   <button
                     key={index}
                     onClick={() => setCurrentScreen(index)}
-                    className={`h-2 rounded-full transition-all ${
-                      index === currentScreen
+                    className={`h-2 rounded-full transition-all ${index === currentScreen
                         ? "w-8 bg-primary"
                         : "w-2 bg-muted-foreground/30"
-                    }`}
+                      }`}
                     aria-label={`Go to ${screens[index].title}`}
                   />
                 ))}

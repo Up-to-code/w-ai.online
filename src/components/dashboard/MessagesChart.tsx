@@ -6,19 +6,19 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 const chartConfig = {
     messages: {
         label: "الرسائل",
-        color: "var(--chart-1)",
+        color: "hsl(var(--primary))",
     },
     inbound: {
         label: "واردة",
-        color: "var(--chart-2)",
+        color: "#6366f1", // Indigo
     },
     outbound: {
         label: "صادرة",
-        color: "var(--chart-3)",
+        color: "#10b981", // Emerald
     },
     campaigns: {
         label: "حملات",
-        color: "var(--chart-4)",
+        color: "#f59e0b", // Amber
     },
 } satisfies ChartConfig
 
@@ -53,19 +53,31 @@ export function MessagesChart({ data }: MessagesChartProps) {
                 <Area
                     dataKey="inbound"
                     type="natural"
-                    fill="var(--color-inbound)"
+                    fill="url(#fillInbound)"
                     fillOpacity={0.4}
-                    stroke="var(--color-inbound)"
+                    stroke="#6366f1"
+                    strokeWidth={2}
                     stackId="a"
                 />
                 <Area
                     dataKey="outbound"
                     type="natural"
-                    fill="var(--color-outbound)"
+                    fill="url(#fillOutbound)"
                     fillOpacity={0.4}
-                    stroke="var(--color-outbound)"
+                    stroke="#10b981"
+                    strokeWidth={2}
                     stackId="a"
                 />
+                <defs>
+                    <linearGradient id="fillInbound" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="fillOutbound" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                </defs>
             </AreaChart>
         </ChartContainer>
     )

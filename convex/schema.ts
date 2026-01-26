@@ -272,10 +272,15 @@ export default defineSchema({
     userId: v.optional(v.id("users")), // Backward compatibility
     organizationId: v.optional(v.id("organizations")), // Multi-tenant: organization that owns this workflow
     name: v.string(),
+    description: v.optional(v.string()), // Optional description
     trigger: v.string(), // new_message, keyword, etc.
     triggerConfig: v.any(), // { keyword: "hello" }
-    action: v.string(), // send_message, add_tag
-    actionConfig: v.any(), // { templateId: "..." }
+    steps: v.array(v.object({
+      type: v.string(), // send_message, add_tag, delay, filter
+      config: v.any()
+    })),
+    action: v.optional(v.string()), // Deprecated, keeping for migration
+    actionConfig: v.optional(v.any()), // Deprecated, keeping for migration
     enabled: v.boolean(),
     stats: v.object({
       runs: v.number(),

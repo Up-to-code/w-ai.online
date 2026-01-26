@@ -94,26 +94,29 @@ export const FeatureShowcase = memo(function FeatureShowcase() {
           {features.map((feature, index) => {
             const Icon = feature.icon
             return (
-              <div key={index} className="space-y-3 text-center">
-                <div className="flex justify-center">
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <Icon className="h-6 w-6" />
+              <motion.div
+                key={index}
+                className="group relative p-8 rounded-[24px] bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-all hover:shadow-xl hover:-translate-y-1"
+              >
+                <div className="flex justify-center mb-6">
+                  <div className="w-14 h-14 rounded-[16px] bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                    <Icon className="h-7 w-7" />
                   </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-foreground mb-1">
+                <div className="text-center space-y-3">
+                  <h3 className="text-xl font-bold text-foreground">
                     {feature.title}
                   </h3>
                   {feature.stat && (
-                    <div className="text-sm text-primary font-semibold mb-2">
+                    <div className="inline-block px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">
                       {feature.stat}
                     </div>
                   )}
+                  <p className="text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {feature.description}
-                </p>
-              </div>
+              </motion.div>
             )
           })}
         </motion.div>
