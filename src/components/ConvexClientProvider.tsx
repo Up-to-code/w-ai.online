@@ -19,20 +19,45 @@ export default function ConvexClientProvider({ children }: { children: ReactNode
 function useAuthFromAuthKit() {
   const { user, loading: isLoading } = useAuth();
   const { accessToken, loading: tokenLoading, error: tokenError } = useAccessToken();
+
+  // Combine loading states
   const loading = (isLoading ?? false) || (tokenLoading ?? false);
+
+  // We are authenticated if we have both a user and an access token
   const authenticated = !!user && !!accessToken && !loading;
+
+  // Debug authentication state
+  if (typeof window !== 'undefined') {
+    // console.log("[ConvexClientProvider] Auth State:", { 
+    //   hasUser: !!user, 
+    //   hasToken: !!accessToken,
+    //   userLoading: isLoading,
+    //   tokenLoading,
+    //   tokenError,
+    //   loading,
+    //   authenticated 
+    // });
+  }
+
+  // Use a ref to keep the access token stable and avoid re-creating fetchAccessToken
   const stableAccessToken = useRef<string | null>(null);
-  
-  if (accessToken && !tokenError) {
+
+  // Update ref whenever we get a valid token
+  if (accessToken) {
     stableAccessToken.current = accessToken;
   }
-  
+
   const fetchAccessToken = useCallback(async () => {
-    if (stableAccessToken.current && !tokenError) {
+    // If we have a token in the ref, return it
+    if (stableAccessToken.current) {
       return stableAccessToken.current;
     }
+    // If we have the token directly (race condition safety), return it
+    if (accessToken) {
+      return accessToken;
+    }
     return null;
-  }, [tokenError]);
+  }, [accessToken]); // Added accessToken to dependency to be safe, though ref handles most cases
 
   return {
     isLoading: loading,
