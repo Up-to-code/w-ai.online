@@ -80,18 +80,18 @@ export default function DashboardPage() {
     ]
 
     return (
-        <div className="p-8 sm:p-12 space-y-10 bg-background min-h-full" dir="rtl">
+        <div className="p-6 sm:p-10 space-y-10 bg-background min-h-full" dir="rtl">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-foreground tracking-tight">لوحة التحكم</h1>
-                    <p className="text-muted-foreground font-medium">نظرة سريعة على أداء عملك اليوم</p>
+                    <h1 className="text-4xl font-black text-foreground tracking-tight">لوحة التحكم</h1>
+                    <p className="text-lg text-muted-foreground font-medium">نظرة سريعة على أداء عملك اليوم</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
                     <PeriodSelector value={timeFilter} onChange={setTimeFilter} />
                     <Link href="/campaigns/new" className="w-full sm:w-auto">
-                        <Button className="w-full h-11 px-8 gap-2 bg-[#004D3D] hover:bg-[#003D2D] rounded-[16px] font-bold">
-                            <Plus className="h-4 w-4" />
+                        <Button className="w-full h-12 px-8 gap-2 bg-primary hover:bg-primary/90 rounded-[14px] font-bold transition-all hover:-translate-y-0.5 active:translate-y-0">
+                            <Plus className="h-5 w-5" />
                             حملة جديدة
                         </Button>
                     </Link>
@@ -101,24 +101,24 @@ export default function DashboardPage() {
             {/* Main Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                 {mainStats.map((stat, i) => (
-                    <Card key={i} className="border-none bg-card hover:bg-slate-50/50 transition-colors rounded-[16px] overflow-hidden group">
+                    <Card key={i} className="border border-border/50 bg-card hover:bg-slate-50/50 transition-all rounded-[24px] overflow-hidden group">
                         <CardContent className="pt-8 pb-8 px-8">
                             <div className="flex justify-between items-start">
                                 <div className="space-y-1">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</p>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-2">{stat.label}</p>
                                     <p className="text-3xl font-black text-foreground tracking-tight">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</p>
                                     {stat.trend !== undefined && (
                                         <div className={cn(
-                                            "flex items-center gap-1 mt-2 text-xs font-black",
-                                            stat.trend >= 0 ? 'text-success' : 'text-danger'
+                                            "flex items-center gap-1 mt-3 px-2 py-0.5 rounded-full w-fit text-[10px] font-black",
+                                            stat.trend >= 0 ? 'text-success bg-success/10' : 'text-danger bg-danger/10'
                                         )}>
                                             {stat.trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                                             {Math.abs(stat.trend).toFixed(1)}%
                                         </div>
                                     )}
                                 </div>
-                                <div className={cn("w-14 h-14 rounded-[16px] flex items-center justify-center transition-transform group-hover:scale-110 duration-300", stat.color)}>
-                                    <stat.icon className="h-7 w-7" />
+                                <div className={cn("w-12 h-12 rounded-[14px] flex items-center justify-center transition-transform group-hover:scale-110 duration-500", stat.color)}>
+                                    <stat.icon className="h-6 w-6" />
                                 </div>
                             </div>
                         </CardContent>
@@ -128,11 +128,11 @@ export default function DashboardPage() {
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2 border-none bg-card rounded-[16px] overflow-hidden p-4">
-                    <CardHeader className="px-6 pb-2">
-                        <CardTitle className="text-xl font-bold">أداء الرسائل</CardTitle>
+                <Card className="lg:col-span-2 border border-border/50 bg-card rounded-[24px] overflow-hidden p-6">
+                    <CardHeader className="px-2 pb-6">
+                        <CardTitle className="text-xl font-black">أداء الرسائل</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-0">
                         {stats.chartData && stats.chartData.length > 0 ? (
                             <MessagesChart data={stats.chartData} />
                         ) : (
@@ -143,11 +143,11 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-1 border-none bg-card rounded-[16px] overflow-hidden p-4">
-                    <CardHeader className="px-6 pb-2">
-                        <CardTitle className="text-xl font-bold">توزيع الحالة</CardTitle>
+                <Card className="lg:col-span-1 border border-border/50 bg-card rounded-[24px] overflow-hidden p-6">
+                    <CardHeader className="px-2 pb-6">
+                        <CardTitle className="text-xl font-black">توزيع الحالة</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-0">
                         {stats.messageStatusData ? (
                             <MessageStatusChart data={stats.messageStatusData} />
                         ) : (
@@ -161,11 +161,11 @@ export default function DashboardPage() {
 
             {/* Delivery Performance & Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
-                <Card className="border-none bg-card rounded-[16px] overflow-hidden p-4">
-                    <CardHeader className="px-6 pb-2">
-                        <CardTitle className="text-xl font-bold">معدلات الأداء</CardTitle>
+                <Card className="border border-border/50 bg-card rounded-[24px] overflow-hidden p-6">
+                    <CardHeader className="px-2 pb-6">
+                        <CardTitle className="text-xl font-black">معدلات الأداء</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="px-0">
                         {stats.chartData && stats.chartData.length > 0 ? (
                             <DeliveryRateChart data={stats.chartData} />
                         ) : (
@@ -176,21 +176,21 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-none bg-card rounded-[16px] overflow-hidden p-4">
-                    <CardHeader className="px-6 pb-2 flex flex-row items-center justify-between">
-                        <CardTitle className="text-xl font-bold">النشاط الأخير</CardTitle>
-                        <History className="h-5 w-5 text-muted-foreground opacity-30" />
+                <Card className="border border-border/50 bg-card rounded-[24px] overflow-hidden p-6">
+                    <CardHeader className="px-2 pb-6 flex flex-row items-center justify-between">
+                        <CardTitle className="text-xl font-black">النشاط الأخير</CardTitle>
+                        <History className="h-5 w-5 text-muted-foreground opacity-20" />
                     </CardHeader>
-                    <CardContent className="space-y-4 px-6">
+                    <CardContent className="space-y-4 px-2">
                         {stats.recentActivity?.slice(0, 5).map((activity: any) => (
-                            <div key={activity.id} className="flex items-center gap-5 p-4 rounded-[16px] hover:bg-slate-50 transition-colors group">
+                            <div key={activity.id} className="flex items-center gap-5 p-4 rounded-[18px] hover:bg-muted/30 transition-all border border-transparent hover:border-border/30 group">
                                 <div className={cn(
-                                    "w-12 h-12 rounded-[16px] flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                                    "w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
                                     activity.type === 'message' ? 'bg-primary/10 text-primary' :
                                         activity.type === 'broadcast' ? 'bg-info/10 text-info' :
                                             activity.type === 'template' ? 'bg-success/10 text-success' :
                                                 activity.type === 'workflow' ? 'bg-warning/10 text-warning' :
-                                                    'bg-slate-100 text-slate-500'
+                                                    'bg-slate-100/50 text-slate-500'
                                 )}>
                                     {activity.type === 'message' && <MessageSquare className="h-6 w-6" />}
                                     {activity.type === 'broadcast' && <Radio className="h-6 w-6" />}

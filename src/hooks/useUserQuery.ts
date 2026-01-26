@@ -16,13 +16,16 @@ import { useUserContext } from "./useUserContext";
 export function useUserQuery<Query extends FunctionReference<"query", "public", any>>(
   query: Query,
   args: any,
-  options?: any
+  options?: { enabled?: boolean }
 ) {
   const { userId, isLoading: userLoading } = useUserContext();
 
-  if (!userId || userLoading) {
+  const shouldSkip = !userId || userLoading || args === "skip" || options?.enabled === false;
+
+  if (shouldSkip) {
     return useQuery(query as any, "skip" as any);
   }
+
   return useQuery(query as any, { ...args, userId } as any);
 }
 

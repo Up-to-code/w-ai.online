@@ -32,11 +32,12 @@ import {
     MoreVertical
 } from "lucide-react"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils"
 import { logger } from "@/lib/logger"
 
 export default function TemplatesPage() {
@@ -84,9 +85,9 @@ export default function TemplatesPage() {
             logger.error("Delete failed:", error)
             const errorMessage = error.message || String(error)
             if (errorMessage.includes("Permission") || errorMessage.includes("(#100)")) {
-                 showToast("error", "فشل الحذف: لا تملك صلاحيات كافية في حساب Meta")
+                showToast("error", "فشل الحذف: لا تملك صلاحيات كافية في حساب Meta")
             } else {
-                 showToast("error", "فشل في حذف القالب")
+                showToast("error", "فشل في حذف القالب")
             }
         } finally {
             setIsDeleting(false)
@@ -136,20 +137,28 @@ export default function TemplatesPage() {
     }
 
     return (
-        <div className="space-y-8 p-6 sm:p-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
+        <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto" dir="rtl">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground">قوالب الرسائل</h1>
-                    <p className="text-muted-foreground text-lg">إدارة وتخصيص قوالب WhatsApp المعتمدة</p>
+                    <div className="flex items-center gap-3">
+                        <FileText className="h-8 w-8 text-primary" />
+                        <h1 className="text-3xl font-black tracking-tight text-foreground">قوالب الرسائل</h1>
+                    </div>
+                    <p className="text-base text-muted-foreground font-medium">إدارة وتخصيص قوالب WhatsApp المعتمدة</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="gap-2" onClick={handleSync} disabled={isSyncing}>
+                    <Button
+                        variant="outline"
+                        className="gap-2 h-12 px-6 font-black rounded-[14px] border-border/50 hover:bg-muted shadow-none"
+                        onClick={handleSync}
+                        disabled={isSyncing}
+                    >
                         <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
                         مزامنة
                     </Button>
                     <Link href="/templates/new">
-                        <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-none rounded-xl px-6">
+                        <Button className="gap-2 bg-primary hover:bg-primary/95 text-white rounded-[14px] h-12 px-8 font-black shadow-none border-none">
                             <Plus className="h-5 w-5" />
                             قالب جديد
                         </Button>
@@ -158,50 +167,49 @@ export default function TemplatesPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard 
-                    title="إجمالي القوالب" 
-                    value={stats.total} 
-                    icon={<FileText className="h-4 w-4 text-primary" />} 
-                />
-                <StatCard 
-                    title="معتمدة" 
-                    value={stats.approved} 
-                    icon={<CheckCircle2 className="h-4 w-4 text-success" />} 
-                    variant="default"
-                />
-                <StatCard 
-                    title="قيد المراجعة" 
-                    value={stats.pending} 
-                    icon={<Clock className="h-4 w-4 text-yellow-600" />} 
-                    variant="default"
-                />
-                <StatCard 
-                    title="مرفوضة" 
-                    value={stats.rejected} 
-                    icon={<AlertTriangle className="h-4 w-4 text-destructive" />} 
-                    variant="default"
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                    { title: "إجمالي القوالب", value: stats.total, icon: FileText, color: "text-primary/70 bg-primary/5" },
+                    { title: "معتمدة", value: stats.approved, icon: CheckCircle2, color: "text-success/70 bg-success/5" },
+                    { title: "قيد المراجعة", value: stats.pending, icon: Clock, color: "text-yellow-500/70 bg-yellow-500/5" },
+                    { title: "مرفوضة", value: stats.rejected, icon: AlertTriangle, color: "text-destructive/70 bg-destructive/5" }
+                ].map((stat, i) => (
+                    <Card key={i} className="border border-border/50 bg-card rounded-[20px] shadow-none overflow-hidden">
+                        <CardContent className="p-6">
+                            <div className="flex flex-col gap-4">
+                                <div className={cn("w-9 h-9 rounded-full flex items-center justify-center", stat.color)}>
+                                    <stat.icon className="h-4 w-4" />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <p className="text-3xl font-black tracking-tighter leading-none">{stat.value || 0}</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                                        {stat.title}
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
 
             {/* Search & Filter */}
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                <div className="relative flex-1 min-w-[200px] max-w-md w-full">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-col sm:flex-row gap-6 items-center justify-between">
+                <div className="relative flex-1 min-w-[200px] max-w-md w-full group">
+                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                     <Input
                         placeholder="بحث في القوالب..."
-                        className="pr-10 bg-white dark:bg-muted/30 border-none shadow-none ring-1 ring-border/50 focus:ring-primary/20 rounded-xl h-11"
+                        className="pl-4 pr-12 bg-muted/20 border-border/50 rounded-[14px] h-12 font-bold text-base focus:ring-primary/20 transition-all shadow-none"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
-                <div className="bg-muted p-1 rounded-xl flex items-center w-full sm:w-auto">
+                <div className="bg-muted/30 p-1 rounded-[14px] flex items-center border border-border/50 w-full sm:w-auto">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                        <TabsList className="bg-transparent p-0 w-full sm:w-auto">
-                            <TabsTrigger value="all" className="rounded-lg px-4 flex-1 sm:flex-none">الكل</TabsTrigger>
-                            <TabsTrigger value="approved" className="rounded-lg px-4 flex-1 sm:flex-none">معتمد</TabsTrigger>
-                            <TabsTrigger value="pending" className="rounded-lg px-4 flex-1 sm:flex-none">مراجعة</TabsTrigger>
-                            <TabsTrigger value="rejected" className="rounded-lg px-4 flex-1 sm:flex-none">مرفوض</TabsTrigger>
+                        <TabsList className="bg-transparent p-0 gap-1 w-full sm:w-auto">
+                            <TabsTrigger value="all" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">الكل</TabsTrigger>
+                            <TabsTrigger value="approved" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">معتمد</TabsTrigger>
+                            <TabsTrigger value="pending" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">مراجعة</TabsTrigger>
+                            <TabsTrigger value="rejected" className="rounded-[10px] px-6 h-9 font-black transition-all data-[state=active]:bg-primary data-[state=active]:text-white">مرفوض</TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </div>
@@ -209,74 +217,82 @@ export default function TemplatesPage() {
 
             {/* Templates Grid */}
             {templates.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/5 rounded-3xl border border-dashed border-muted-foreground/20">
-                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+                <div className="flex flex-col items-center justify-center py-24 text-center bg-card rounded-[24px] border-2 border-dashed border-border/50 hover:bg-muted/5 transition-colors">
+                    <div className="w-24 h-24 bg-primary/5 rounded-[28px] flex items-center justify-center mb-6 border-2 border-primary/10">
                         <FileText className="h-10 w-10 text-primary" />
                     </div>
-                    <h3 className="text-xl font-bold mb-2">لا توجد قوالب حتى الآن</h3>
-                    <p className="text-muted-foreground max-w-sm mb-8">
-                        ابدأ بإنشاء قالبك الأول للتواصل مع عملائك.
+                    <h3 className="text-2xl font-black mb-3 text-foreground tracking-tight">لا توجد قوالب حتى الآن</h3>
+                    <p className="text-muted-foreground text-base max-w-sm mb-10 font-medium leading-relaxed">
+                        ابدأ بإنشاء قالبك الأول للتواصل مع عملائك من خلال WhatsApp.
                     </p>
                     <div className="flex gap-4">
-                        <Button variant="outline" onClick={handleSync}>مزامنة من Meta</Button>
+                        <Button
+                            variant="outline"
+                            className="h-12 px-8 rounded-[14px] font-black border-border/50 hover:bg-muted shadow-none"
+                            onClick={handleSync}
+                        >
+                            مزامنة من Meta
+                        </Button>
                         <Link href="/templates/new">
-                            <Button>إنشاء قالب</Button>
+                            <Button className="h-12 px-8 rounded-[14px] font-black bg-primary text-white shadow-none">
+                                إنشاء قالب جديد
+                            </Button>
                         </Link>
                     </div>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredTemplates.map((template: Doc<"templates">) => (
-                        <Card key={template._id} className="group overflow-hidden border-none ring-1 ring-border/50 shadow-none hover:shadow-lg hover:ring-primary/20 transition-all duration-300">
-                            <CardHeader className="pb-3 pt-5 px-5">
+                        <Card key={template._id} className="group overflow-hidden border border-border/50 bg-card rounded-[20px] shadow-none hover:bg-muted/5 transition-all duration-300">
+                            <CardHeader className="pb-4 pt-6 px-6">
                                 <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-4">
                                         {getMediaIcon(template.components)}
-                                        <div>
-                                            <CardTitle className="text-base font-bold line-clamp-1">{template.name}</CardTitle>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-normal bg-muted/50 border-0 text-muted-foreground">
+                                        <div className="min-w-0">
+                                            <CardTitle className="text-lg font-black tracking-tight line-clamp-1 group-hover:text-primary transition-colors">{template.name}</CardTitle>
+                                            <div className="flex items-center gap-2 mt-1.5">
+                                                <Badge variant="secondary" className="text-[10px] px-2 py-0.5 rounded-[6px] font-black uppercase tracking-widest bg-primary/5 text-primary border-none">
                                                     {template.category}
                                                 </Badge>
-                                                <span className="text-[10px] text-muted-foreground uppercase">{template.language}</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{template.language}</span>
                                             </div>
                                         </div>
                                     </div>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all rounded-full hover:bg-muted">
                                                 <MoreVertical className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
+                                        <DropdownMenuContent align="end" className="rounded-[14px] border-border/50 p-2 min-w-[160px]">
                                             <Link href={`/templates/new?edit=${template.name}`}>
-                                                <DropdownMenuItem>
-                                                    <Edit className="h-4 w-4 ml-2" />
+                                                <DropdownMenuItem className="rounded-[10px] gap-2 font-bold cursor-pointer">
+                                                    <Edit className="h-4 w-4 text-primary" />
                                                     تعديل
                                                 </DropdownMenuItem>
                                             </Link>
-                                            <DropdownMenuItem 
-                                                className="text-destructive focus:text-destructive"
+                                            <DropdownMenuItem
+                                                className="rounded-[10px] gap-2 font-bold cursor-pointer text-destructive focus:text-destructive"
                                                 onClick={() => setDeleteTemplateData(template)}
                                             >
-                                                <Trash2 className="h-4 w-4 ml-2" />
+                                                <Trash2 className="h-4 w-4" />
                                                 حذف
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
                             </CardHeader>
-                            <CardContent className="px-5 pb-5">
-                                <div className="bg-muted/30 rounded-xl p-3 mb-4 min-h-[80px]">
-                                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                            <CardContent className="px-6 pb-6 pt-0">
+                                <div className="bg-muted/10 rounded-[14px] p-4 mb-5 min-h-[100px] border border-border/30">
+                                    <p className="text-sm font-bold text-muted-foreground/80 line-clamp-3 leading-relaxed">
                                         {getBodyText(template.components) || template.content || "لا يوجد محتوى نصي"}
                                     </p>
                                 </div>
 
                                 <div className="flex items-center justify-between mt-auto">
                                     {getStatusBadge(template.status)}
-                                    <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/5 -ml-2" onClick={() => setPreviewTemplate(template)}>
-                                        <Eye className="h-4 w-4 ml-1" />
+                                    <Button variant="ghost" size="sm" className="h-9 px-4 rounded-[10px] font-black text-primary hover:text-primary hover:bg-primary/10 transition-colors" onClick={() => setPreviewTemplate(template)}>
+                                        <Eye className="h-4 w-4 ml-2" />
                                         معاينة
                                     </Button>
                                 </div>
@@ -289,6 +305,9 @@ export default function TemplatesPage() {
             {/* Preview Modal */}
             <Dialog open={!!previewTemplate} onOpenChange={(open) => !open && setPreviewTemplate(null)}>
                 <DialogContent className="max-w-sm p-0 overflow-hidden bg-transparent border-none shadow-none">
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>معاينة القالب</DialogTitle>
+                    </DialogHeader>
                     {previewTemplate && (
                         <div className="relative mx-auto border-gray-800 dark:border-gray-800 bg-gray-900 border-[14px] rounded-[2.5rem] h-[600px] w-[320px] shadow-xl flex flex-col">
                             <div className="w-[148px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute z-20"></div>
@@ -296,7 +315,7 @@ export default function TemplatesPage() {
                             <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
                             <div className="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
                             <div className="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
-                            
+
                             {/* WhatsApp Header */}
                             <div className="bg-[#008069] dark:bg-[#202c33] p-3 pt-8 flex items-center gap-2 text-white z-10 rounded-t-[2rem]">
                                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
@@ -307,7 +326,7 @@ export default function TemplatesPage() {
                                     <div className="text-[10px] opacity-80">Business Account</div>
                                 </div>
                             </div>
-                            
+
                             {/* Message Area */}
                             <div className="flex-1 p-3 overflow-y-auto bg-[#E5DDD5] dark:bg-[#111b21] bg-opacity-90 relative rounded-b-[2rem]">
                                 {previewTemplate.components?.some((c: any) => c.type === "CAROUSEL") ? (
@@ -380,7 +399,7 @@ export default function TemplatesPage() {
                                                     {previewTemplate.components.find((c: any) => c.type === "FOOTER")?.text}
                                                 </p>
                                             )}
-                                            
+
                                             <div className="text-[10px] text-gray-400 text-right mt-1">
                                                 12:00 PM
                                             </div>
@@ -434,9 +453,8 @@ export default function TemplatesPage() {
 
             {/* Toast Notification */}
             {toast && (
-                <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-lg z-50 animate-in slide-in-from-bottom-5 duration-300 ${
-                    toast.type === "success" ? "bg-black text-white" : "bg-destructive text-white"
-                }`}>
+                <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-lg z-50 animate-in slide-in-from-bottom-5 duration-300 ${toast.type === "success" ? "bg-black text-white" : "bg-destructive text-white"
+                    }`}>
                     {toast.message}
                 </div>
             )}

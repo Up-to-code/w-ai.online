@@ -7,6 +7,7 @@ import { useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import Image from "next/image"
 import {
   LayoutDashboard,
   MessageSquare,
@@ -75,19 +76,18 @@ function SidebarContent({ pathname, isCollapsed, onToggle }: { pathname: string;
     )}>
       {/* Logo/Branding */}
       <div className={cn(
-        "p-6 border-b border-sidebar-border flex items-center gap-3",
+        "p-6 border-b border-sidebar-border/50 flex items-center gap-3",
         isCollapsed ? "justify-center" : "justify-between"
       )}>
         <div className={cn("flex items-center gap-4", isCollapsed && "justify-center")}>
-          <div className="w-10 h-10 shrink-0">
-            <img src="/apple-touch-icon.png" alt="W-AI" className="w-full h-full object-contain" />
+          <div className={cn("relative shrink-0", isCollapsed ? "w-10 h-10" : "w-32 h-10")}>
+            <Image
+              src="/bg-non.png"
+              alt="W-AI Logo"
+              fill
+              className={cn("object-contain", isCollapsed ? "object-center" : "object-right")}
+            />
           </div>
-          {!isCollapsed && (
-            <div className="flex flex-col">
-              <h1 className="text-xl font-black text-sidebar-foreground tracking-tight leading-none">W-AI</h1>
-              <p className="text-[10px] text-muted-foreground font-medium mt-1">أتمت واتساب للأعمال</p>
-            </div>
-          )}
         </div>
 
         {/* Toggle button inside sidebar for desktop */}
@@ -95,7 +95,7 @@ function SidebarContent({ pathname, isCollapsed, onToggle }: { pathname: string;
           <Button
             variant="ghost"
             size="icon"
-            className="hidden md:flex h-8 w-8 text-muted-foreground hover:text-primary"
+            className="hidden md:flex h-8 w-8 text-muted-foreground hover:text-primary rounded-[10px]"
             onClick={onToggle}
           >
             <ChevronRight className="h-4 w-4" />
@@ -104,7 +104,7 @@ function SidebarContent({ pathname, isCollapsed, onToggle }: { pathname: string;
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto overflow-x-hidden">
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto overflow-x-hidden">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
           return (
@@ -113,14 +113,14 @@ function SidebarContent({ pathname, isCollapsed, onToggle }: { pathname: string;
               href={item.href}
               title={isCollapsed ? item.label : undefined}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
+                "flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-sm font-medium transition-all group",
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                  ? "bg-primary text-primary-foreground"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 isCollapsed && "justify-center px-0 h-11"
               )}
             >
-              <item.icon className={cn("h-5 w-5 shrink-0 transition-transform group-hover:scale-110", isActive && "scale-110")} />
+              <item.icon className={cn("h-5 w-5 shrink-0 transition-transform group-hover:scale-110", isActive && "scale-105")} />
               {!isCollapsed && <span className="truncate">{item.label}</span>}
             </Link>
           )
@@ -129,11 +129,11 @@ function SidebarContent({ pathname, isCollapsed, onToggle }: { pathname: string;
 
       {/* Footer / Toggle for collapsed state */}
       {isCollapsed && onToggle && (
-        <div className="p-4 border-t border-sidebar-border flex justify-center">
+        <div className="p-4 border-t border-sidebar-border/50 flex justify-center">
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 text-muted-foreground hover:text-primary"
+            className="h-10 w-10 text-muted-foreground hover:text-primary rounded-[12px]"
             onClick={onToggle}
           >
             <ChevronLeft className="h-5 w-5" />
@@ -156,14 +156,14 @@ function DashboardHeader({ pathname, isCollapsed, onToggle }: { pathname: string
   const showBack = pathSegments.length >= 2
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 sm:px-6 gap-4">
+    <header className="h-16 bg-card border-b border-border/50 flex items-center justify-between px-4 sm:px-6 gap-4">
       <div className="flex items-center gap-4 flex-1 min-w-0">
         {/* Toggle for desktop if isCollapsed and button not in sidebar */}
         {isCollapsed && (
           <Button
             variant="ghost"
             size="icon"
-            className="hidden md:flex shrink-0 h-9 w-9"
+            className="hidden md:flex shrink-0 h-9 w-9 rounded-[10px]"
             onClick={onToggle}
           >
             <Menu className="h-5 w-5" />
@@ -174,7 +174,7 @@ function DashboardHeader({ pathname, isCollapsed, onToggle }: { pathname: string
           <Button
             variant="ghost"
             size="icon"
-            className="shrink-0"
+            className="shrink-0 rounded-[10px]"
             onClick={() => router.back()}
             aria-label="رجوع"
           >
@@ -183,11 +183,11 @@ function DashboardHeader({ pathname, isCollapsed, onToggle }: { pathname: string
         )}
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden shrink-0">
+            <Button variant="ghost" size="icon" className="md:hidden shrink-0 rounded-[10px]">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="p-0 border-l border-sidebar-border w-72">
+          <SheetContent side="right" className="p-0 border-l border-sidebar-border/50 w-72">
             <SidebarContent pathname={pathname} />
           </SheetContent>
         </Sheet>
@@ -197,14 +197,14 @@ function DashboardHeader({ pathname, isCollapsed, onToggle }: { pathname: string
         ) : (
           <div className="relative max-w-md w-full hidden sm:block">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="البحث..." className="pr-10 bg-background border-border" />
+            <Input placeholder="البحث..." className="pr-10 bg-background border-border/50 rounded-[12px]" />
           </div>
         )}
       </div>
 
       <div className="flex items-center gap-2">
         <OrganizationSelector />
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative rounded-[10px]">
           <Bell className="h-5 w-5 text-muted-foreground" />
           {unreadCount > 0 && (
             <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-destructive text-[10px] font-bold text-destructive-foreground rounded-full flex items-center justify-center">
@@ -292,7 +292,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <DashboardHeaderProvider>
       <div className="flex h-screen bg-background font-sans overflow-hidden" dir="rtl">
         <aside className={cn(
-          "hidden md:flex border-l border-sidebar-border flex-col transition-all duration-300",
+          "hidden md:flex border-l border-sidebar-border/50 flex-col transition-all duration-300",
           isCollapsed ? "w-20" : "w-64"
         )}>
           <SidebarContent pathname={pathname} isCollapsed={isCollapsed} onToggle={toggleSidebar} />
@@ -301,7 +301,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader pathname={pathname} isCollapsed={isCollapsed} onToggle={toggleSidebar} />
 
-          <main className="flex-1 overflow-auto bg-background/50">{children}</main>
+          <main className="flex-1 overflow-auto bg-background/50 relative">{children}</main>
         </div>
 
         {/* Global Notifications */}
