@@ -8,6 +8,7 @@ import { Phone, MessageSquare } from "lucide-react"
 import { avatarColorFromString, initialsFromName } from "@/lib/utils"
 
 type Contact = {
+  _id: string
   name: string
   phone: string
   email?: string
@@ -33,10 +34,12 @@ export function CustomersList({ contacts, chatByPhone }: Props) {
 
         return (
           <div
-            key={`${c.phone}:${c.name}`}
-            className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border hover:bg-muted/50 transition-colors"
+            key={c._id}
+            className="group relative flex items-center justify-between p-3 bg-card rounded-xl border hover:border-primary/50 transition-all hover:shadow-sm"
           >
-            <div className="flex items-center gap-4 min-w-0">
+            <Link href={`/customers/${c._id}`} className="absolute inset-0 z-0" />
+
+            <div className="flex items-center gap-4 min-w-0 z-10 pointer-events-none">
               <Avatar className="h-11 w-11 shrink-0 ring-1 ring-border/40">
                 <AvatarFallback className="text-white text-sm font-semibold" style={{ backgroundColor: avatarBg }}>
                   {initialsFromName(c.name)}
@@ -57,18 +60,18 @@ export function CustomersList({ contacts, chatByPhone }: Props) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 z-10">
               {chatId ? (
                 <Link href={`/chat/${chatId}`}>
-                  <Button variant="outline" className="gap-2 rounded-full">
-                    <MessageSquare className="h-4 w-4" />
-                    فتح المحادثة
+                  <Button variant="outline" size="sm" className="gap-2 rounded-full h-8">
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">المحادثة</span>
                   </Button>
                 </Link>
               ) : (
-                <Button variant="outline" className="gap-2 rounded-full" disabled>
-                  <MessageSquare className="h-4 w-4" />
-                  لا توجد محادثة
+                <Button variant="outline" size="sm" className="gap-2 rounded-full h-8 opacity-50" disabled>
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">لا توجد محادثة</span>
                 </Button>
               )}
             </div>

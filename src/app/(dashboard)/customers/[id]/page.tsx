@@ -39,8 +39,12 @@ import { CustomerDeleteDialog } from "@/components/dashboard/CustomerDeleteDialo
 export default function CustomerDetailPage() {
   const params = useParams()
   const id = params?.id as string
-
   const { userId } = useUserContext()
+
+  // Permissions
+  const role = useQuery(api.permissions.getCurrentUserRole, userId ? { userId } : "skip")
+  const canDelete = role === "owner" || role === "admin"
+
   const contact = useQuery(
     api.contacts.getById,
     id && userId ? { id: id as Id<"contacts">, userId } : "skip" // Fixed: added missing userId
@@ -95,15 +99,17 @@ export default function CustomerDetailPage() {
           <Users className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-semibold">تفاصيل العميل</h1>
         </div>
-        <Button
-          variant="destructive"
-          size="sm"
-          className="gap-2"
-          onClick={() => setIsDeleteDialogOpen(true)}
-        >
-          <Trash2 className="h-4 w-4" />
-          حذف العميل
-        </Button>
+        {canDelete && (
+          <Button
+            variant="destructive"
+            size="sm"
+            className="gap-2"
+            onClick={() => setIsDeleteDialogOpen(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            حذف العميل
+          </Button>
+        )}
       </div>
 
       <Card>

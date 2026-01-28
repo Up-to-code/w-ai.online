@@ -27,6 +27,25 @@ export const list = query({
     },
 });
 
+export const listPaginated = query({
+    args: {
+        userId: v.id("users"),
+        paginationOpts: v.any(), // paginationOpts is typed as 'any' in args but should be PaginationOptions
+    },
+    handler: async (ctx, args) => {
+        const user = await ctx.db.get(args.userId);
+        if (!user || !user.currentOrganizationId) {
+            throw new Error("No organization found");
+        }
+
+        return await ctx.db
+            .query("contacts")
+            .withIndex("by_org_createdAt", (q) => q.eq("organizationId", user.currentOrganizationId!))
+            .order("desc") // Newest first
+            .paginate(args.paginationOpts);
+    },
+});
+
 export const create = mutation({
     args: {
         userId: v.id("users"), // User creating the contact

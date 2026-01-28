@@ -66,6 +66,28 @@ export const getUserRole = query({
   },
 });
 
+// Get current user's role in their active organization
+export const getCurrentUserRole = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user || !user.currentOrganizationId) {
+      return null;
+    }
+
+    const membership = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_org_user", (q) =>
+        q.eq("organizationId", user.currentOrganizationId!).eq("userId", args.userId)
+      )
+      .first();
+
+    return membership?.role || null;
+  },
+});
+
 // Check if user has permission
 export const checkPermission = query({
   args: {

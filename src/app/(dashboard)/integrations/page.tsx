@@ -72,6 +72,8 @@ const ALL_APPS = [
     },
 ]
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 export default function IntegrationsPage() {
     const searchParams = useSearchParams()
     const success = searchParams.get("success")
@@ -92,6 +94,9 @@ export default function IntegrationsPage() {
 
     const orgTools = useQuery(api.organizationTools.list, userId ? { userId } : "skip")
     const canManage = useQuery(api.organizationTools.canManageTools, userId ? { userId } : "skip")
+
+    // Explicit loading state
+    const isLoading = orgTools === undefined || sallaConnection === undefined || metaConnection === undefined
 
     const disconnectSalla = useUserMutation(api.salla.disconnect)
     const disconnectMeta = useAction(api.meta.disconnect)
@@ -219,84 +224,113 @@ export default function IntegrationsPage() {
 
             {/* Apps Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {ALL_APPS.map((app) => {
-                    const isActive = getAppStatus(app.id)
-                    const isAiEnabled = getAiStatus(app.id)
-                    const Icon = app.icon
-
-                    return (
-                        <Card key={app.id} className={cn(
-                            "relative overflow-hidden transition-all",
-                            isActive && "ring-1 ring-primary/30"
-                        )}>
-                            {/* Color bar */}
-                            <div className="h-1.5" style={{ backgroundColor: app.color }} />
-
+                {isLoading ? (
+                    // Skeleton Loading State
+                    Array.from({ length: 4 }).map((_, i) => (
+                        <Card key={i} className="relative overflow-hidden">
+                            <div className="h-1.5 bg-muted" />
                             <CardHeader className="pb-3">
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div
-                                            className="w-11 h-11 rounded-xl flex items-center justify-center"
-                                            style={{ backgroundColor: app.color }}
-                                        >
-                                            <Icon className="h-5 w-5 text-white" />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-base">{app.name}</CardTitle>
-                                            <Badge
-                                                variant={isActive ? "default" : "outline"}
-                                                className={cn(
-                                                    "text-[10px] mt-1",
-                                                    isActive && "bg-success text-success-foreground"
-                                                )}
-                                            >
-                                                {isActive ? "مفعل" : "غير مفعل"}
-                                            </Badge>
+                                        <Skeleton className="w-11 h-11 rounded-xl" />
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-4 w-24" />
+                                            <Skeleton className="h-3 w-12" />
                                         </div>
                                     </div>
-                                    <Switch
-                                        checked={isActive}
-                                        onCheckedChange={(checked) => handleToggle(app.id, checked)}
-                                        disabled={!canManage || (app.id === "whatsapp" && !isActive)}
-                                    />
+                                    <Skeleton className="h-6 w-10 rounded-full" />
                                 </div>
                             </CardHeader>
-
                             <CardContent className="space-y-4">
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {app.description}
-                                </p>
-
-                                {isActive && (
-                                    <div className="flex items-center gap-2">
-                                        {/* AI Toggle for tools only */}
-                                        {app.type === "tool" && canManage && (
-                                            <Button
-                                                variant={isAiEnabled ? "default" : "outline"}
-                                                size="sm"
-                                                onClick={() => handleAiToggle(app.id)}
-                                                className={cn("gap-1.5", isAiEnabled && "bg-primary")}
-                                            >
-                                                <Bot className="h-3.5 w-3.5" />
-                                                AI
-                                            </Button>
-                                        )}
-
-                                        {/* Open/Configure button */}
-                                        {app.href && (
-                                            <Link href={app.href} className="flex-1">
-                                                <Button variant="outline" size="sm" className="w-full gap-2">
-                                                    <ExternalLink className="h-3.5 w-3.5" />
-                                                    فتح
-                                                </Button>
-                                            </Link>
-                                        )}
-                                    </div>
-                                )}
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-3/4" />
+                                <div className="flex gap-2">
+                                    <Skeleton className="h-8 flex-1" />
+                                </div>
                             </CardContent>
                         </Card>
-                    )
-                })}
+                    ))
+                ) : (
+                    ALL_APPS.map((app) => {
+                        // ... existing mapping logic ...
+                        const isActive = getAppStatus(app.id)
+                        const isAiEnabled = getAiStatus(app.id)
+                        const Icon = app.icon
+
+                        return (
+                            <Card key={app.id} className={cn(
+                                "relative overflow-hidden transition-all",
+                                isActive && "ring-1 ring-primary/30"
+                            )}>
+                                {/* Color bar */}
+                                <div className="h-1.5" style={{ backgroundColor: app.color }} />
+
+                                <CardHeader className="pb-3">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className="w-11 h-11 rounded-xl flex items-center justify-center"
+                                                style={{ backgroundColor: app.color }}
+                                            >
+                                                <Icon className="h-5 w-5 text-white" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-base">{app.name}</CardTitle>
+                                                <Badge
+                                                    variant={isActive ? "default" : "outline"}
+                                                    className={cn(
+                                                        "text-[10px] mt-1",
+                                                        isActive && "bg-success text-success-foreground"
+                                                    )}
+                                                >
+                                                    {isActive ? "مفعل" : "غير مفعل"}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            checked={isActive}
+                                            onCheckedChange={(checked) => handleToggle(app.id, checked)}
+                                            disabled={!canManage || (app.id === "whatsapp" && !isActive)}
+                                        />
+                                    </div>
+                                </CardHeader>
+
+                                <CardContent className="space-y-4">
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        {app.description}
+                                    </p>
+
+                                    {isActive && (
+                                        <div className="flex items-center gap-2">
+                                            {/* AI Toggle for tools only */}
+                                            {app.type === "tool" && canManage && (
+                                                <Button
+                                                    variant={isAiEnabled ? "default" : "outline"}
+                                                    size="sm"
+                                                    onClick={() => handleAiToggle(app.id)}
+                                                    className={cn("gap-1.5", isAiEnabled && "bg-primary")}
+                                                >
+                                                    <Bot className="h-3.5 w-3.5" />
+                                                    AI
+                                                </Button>
+                                            )}
+
+                                            {/* Open/Configure button */}
+                                            {app.href && (
+                                                <Link href={app.href} className="flex-1">
+                                                    <Button variant="outline" size="sm" className="w-full gap-2">
+                                                        <ExternalLink className="h-3.5 w-3.5" />
+                                                        فتح
+                                                    </Button>
+                                                </Link>
+                                            )}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )
+                    })
+                )}
             </div>
 
             {!canManage && (
