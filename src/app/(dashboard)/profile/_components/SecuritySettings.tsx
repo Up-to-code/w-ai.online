@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -51,6 +51,13 @@ export function SecuritySettings({ user, organization }: SecuritySettingsProps) 
     const [orgName, setOrgName] = useState(organization?.name || "")
     const [orgSlug, setOrgSlug] = useState(organization?.slug || "")
     const updateOrg = useMutation(api.organizations.updateOrganization)
+
+    // Sync state with prop
+    // This ensures that when the organization data loads or changes, the dialog reflects the correct values
+    useEffect(() => {
+        setOrgName(organization?.name || "")
+        setOrgSlug(organization?.slug || "")
+    }, [organization])
 
     // Invite State
     const [isInviting, setIsInviting] = useState(false)

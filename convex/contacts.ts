@@ -27,15 +27,17 @@ export const list = query({
     },
 });
 
+import { paginationOptsValidator } from "convex/server";
+
 export const listPaginated = query({
     args: {
         userId: v.id("users"),
-        paginationOpts: v.any(), // paginationOpts is typed as 'any' in args but should be PaginationOptions
+        paginationOpts: paginationOptsValidator,
     },
     handler: async (ctx, args) => {
         const user = await ctx.db.get(args.userId);
         if (!user || !user.currentOrganizationId) {
-            throw new Error("No organization found");
+            return { page: [], isDone: true, continueCursor: "" };
         }
 
         return await ctx.db

@@ -28,7 +28,11 @@ export const updateProfile = mutation({
       throw new Error("Unauthorized");
     }
 
-    await ctx.db.patch(userId, updates);
+    // Do not allow email updates via this mutation
+    // Explicitly exclude email even if passed
+    const { email, ...safeUpdates } = updates;
+
+    await ctx.db.patch(userId, safeUpdates);
     return true;
   },
 });
