@@ -2,14 +2,32 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 // Update user profile
+// Update user profile
 export const updateProfile = mutation({
   args: {
     userId: v.id("users"),
     name: v.optional(v.string()),
-    email: v.optional(v.string())
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    title: v.optional(v.string()),
+    bio: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { userId, ...updates } = args;
+
+    // Validate user exists
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("المستخدم غير موجود");
+
+    // Check if user is trying to update their own profile or has admin rights
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    // Verify identity matches the user being updated
+    if (user.tokenIdentifier !== identity.tokenIdentifier) {
+      throw new Error("Unauthorized");
+    }
+
     await ctx.db.patch(userId, updates);
     return true;
   },

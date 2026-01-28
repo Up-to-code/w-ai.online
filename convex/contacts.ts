@@ -1,6 +1,6 @@
 import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { internal, api } from "./_generated/api";
 
 export const list = query({
     args: {
@@ -24,6 +24,25 @@ export const list = query({
             return await q.take(args.limit);
         }
         return await q.collect();
+    },
+});
+
+export const listPaginated = query({
+    args: {
+        userId: v.id("users"),
+        paginationOpts: v.any(), // paginationOpts is typed as 'any' in args but should be PaginationOptions
+    },
+    handler: async (ctx, args) => {
+        const user = await ctx.db.get(args.userId);
+        if (!user || !user.currentOrganizationId) {
+            throw new Error("No organization found");
+        }
+
+        return await ctx.db
+            .query("contacts")
+            .withIndex("by_org_createdAt", (q) => q.eq("organizationId", user.currentOrganizationId!))
+            .order("desc") // Newest first
+            .paginate(args.paginationOpts);
     },
 });
 
@@ -195,7 +214,16 @@ export const deleteContact = mutation({
             throw new Error("Contact not found");
         }
 
-        // Note: In a real production app, we might want to cascade delete or soft delete
+        // Check permissions
+        const hasPermission = await ctx.runQuery(api.permissions.checkPermission, {
+            userId: args.userId,
+            organizationId: user.currentOrganizationId,
+            permission: "manage_contacts"
+        });
+
+        if (!hasPermission) {
+            throw new Error("Unauthorized: Missing MANAGE_CONTACTS permission");
+        }
         // For now, we just delete the contact record.
         // Linked chats, bookings, etc. will effectively be orphaned or handled by UI checks.
 

@@ -6,6 +6,8 @@ export default defineSchema({
     name: v.optional(v.string()),
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
+    title: v.optional(v.string()), // Job title
+    bio: v.optional(v.string()),   // Short biography
     role: v.union(v.literal("admin"), v.literal("agent"), v.literal("user")),
     // Auth fields (if using custom auth or linking to provider)
     tokenIdentifier: v.optional(v.string()),

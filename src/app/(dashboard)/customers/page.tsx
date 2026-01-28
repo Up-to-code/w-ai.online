@@ -1,20 +1,46 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useUserContext } from "@/hooks/useUserContext"
 import { useUserQuery } from "@/hooks/useUserQuery"
+import { usePaginatedQuery, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Users } from "lucide-react"
 import { CustomersHeader } from "./_components/CustomersHeader"
 import { TagFilter } from "./_components/TagFilter"
 import { CustomersList } from "./_components/CustomersList"
 
 export default function CustomersPage() {
-  const contacts = useUserQuery(api.contacts.list, { limit: 1000 })
-  const chats = useUserQuery(api.chat.listChats, {})
-
+  const { userId } = useUserContext()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
+
+  // Permissions
+  const role = useQuery(api.permissions.getCurrentUserRole, userId ? { userId } : "skip")
+  // Removed unused canManage variable
+
+  // 1. Paginated Query (Default View)
+  const {
+    results: paginatedContacts,
+    status,
+    loadMore
+  } = usePaginatedQuery(
+    api.contacts.listPaginated,
+    userId ? { userId } : "skip",
+    { initialNumItems: 20 }
+  )
+
+  // 2. Full Query (Search/Filter Mode)
+  // Only fetch if filtering is active to save resources
+  const isFiltering = searchQuery.trim().length > 0 || selectedTag !== null
+  const allContacts = useUserQuery(
+    api.contacts.list,
+    isFiltering ? { limit: 1000 } : "skip"
+  )
+
+  const chats = useUserQuery(api.chat.listChats, {})
 
   const chatByPhone = useMemo(() => {
     const map = new Map<string, string>()
@@ -24,23 +50,52 @@ export default function CustomersPage() {
     return map
   }, [chats])
 
+  // Determine which list to show
+  const displayContacts = useMemo(() => {
+    if (isFiltering) {
+      if (!allContacts) return []
+      let list = allContacts
+
+      if (searchQuery.trim()) {
+        const lowerQ = searchQuery.toLowerCase()
+        list = list.filter((c: any) =>
+          (c.name || "").toLowerCase().includes(lowerQ) ||
+          (c.phone || "").includes(searchQuery)
+        )
+      }
+
+      if (selectedTag) {
+        list = list.filter((c: any) => (c.tags || []).includes(selectedTag))
+      }
+      return list
+    }
+    return paginatedContacts || []
+  }, [isFiltering, allContacts, paginatedContacts, searchQuery, selectedTag])
+
+  // Get unique tags from the small set (paginated) or full set if filtering?
+  // Ideally tags should come from a separate query or aggregation. 
+  // For now, let's just use the current display set to avoid confusing filters.
   const uniqueTags = useMemo(() => {
     const set = new Set<string>()
-      ; (contacts || []).forEach((c: any) => (c.tags || []).forEach((t: any) => set.add(t)))
+    if (isFiltering && allContacts) {
+      allContacts.forEach((c: any) => {
+        (c.tags || []).forEach((t: any) => {
+          set.add(t)
+        })
+      })
+    } else {
+      // Fallback: If not filtering, we only show tags from visible 20 items? 
+      // This is a UI limitation of client-side tags. Let's stick to visible for now or fetch stats.
+      (paginatedContacts || []).forEach((c: any) => {
+        (c.tags || []).forEach((t: any) => {
+          set.add(t)
+        })
+      })
+    }
     return Array.from(set).sort()
-  }, [contacts])
+  }, [isFiltering, allContacts, paginatedContacts])
 
-  const filteredContacts = useMemo(() => {
-    const list = contacts || []
-    const bySearch = searchQuery.trim()
-      ? list.filter((c: any) =>
-        (c.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.phone || "").includes(searchQuery)
-      )
-      : list
-    const byTag = selectedTag ? bySearch.filter((c: any) => (c.tags || []).includes(selectedTag)) : bySearch
-    return byTag
-  }, [contacts, searchQuery, selectedTag])
+  const isLoading = (isFiltering && !allContacts) || (!isFiltering && !paginatedContacts)
 
   return (
     <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
@@ -57,9 +112,9 @@ export default function CustomersPage() {
         <CustomersHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          allContacts={contacts || []}
+          allContacts={isFiltering ? allContacts || [] : paginatedContacts || []}
           uniqueTags={uniqueTags}
-          filteredContacts={filteredContacts}
+          filteredContacts={displayContacts}
         />
       </div>
 
@@ -70,7 +125,10 @@ export default function CustomersPage() {
             <div className="space-y-1">
               <CardTitle className="text-xl font-black">قائمة العملاء</CardTitle>
               <CardDescription className="font-bold uppercase tracking-widest text-[10px]">
-                إجمالي العملاء: {contacts ? contacts.length : 0}
+                {isFiltering
+                  ? `النتائج: ${displayContacts.length}`
+                  : `إجمالي العملاء: ${displayContacts.length}${status === "CanLoadMore" ? "+" : ""}`
+                }
               </CardDescription>
             </div>
           </div>
@@ -79,14 +137,28 @@ export default function CustomersPage() {
           </div>
         </CardHeader>
         <CardContent className="p-8 pt-0">
-          {!contacts ? (
+          {isLoading ? (
             <div className="py-20 text-center flex flex-col items-center gap-4">
               <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
               <p className="font-bold text-muted-foreground">جارٍ التحميل...</p>
             </div>
           ) : (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <CustomersList contacts={filteredContacts} chatByPhone={chatByPhone} />
+            <div className="space-y-6">
+              <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <CustomersList contacts={displayContacts} chatByPhone={chatByPhone} />
+              </div>
+
+              {!isFiltering && status === "CanLoadMore" && (
+                <div className="flex justify-center pt-4">
+                  <Button
+                    onClick={() => loadMore(20)}
+                    variant="outline"
+                    className="gap-2 min-w-[150px]"
+                  >
+                    عرض المزيد
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

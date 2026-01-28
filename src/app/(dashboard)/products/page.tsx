@@ -37,7 +37,51 @@ export default function ProductsPage() {
         api.salla.getConnection,
         organizationId ? { organizationId } : userId ? { userId } : "skip"
     )
+    const orgTools = useQuery(api.organizationTools.list, userId ? { userId } : "skip")
     const fetchProducts = useAction(api.salla.fetchProducts)
+
+    const isProductsEnabled = orgTools?.find((t: any) => t.toolId === "products")?.isActive ?? false
+
+    // 1. Loading State: Wait for orgTools to load
+    if (orgTools === undefined) {
+        return (
+            <div className="space-y-6 m-16">
+                <div className="flex items-center gap-3 animate-pulse">
+                    <div className="w-10 h-10 rounded-xl bg-muted" />
+                    <div className="space-y-2">
+                        <div className="h-8 w-32 bg-muted rounded" />
+                        <div className="h-4 w-24 bg-muted rounded" />
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-8">
+                    {[...Array(8)].map((_, i) => (
+                        <div key={i} className="rounded-xl border bg-muted/30 animate-pulse h-64" />
+                    ))}
+                </div>
+            </div>
+        )
+    }
+
+    // 2. Disabled State: Show if explicitly disabled
+    if (!isProductsEnabled) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
+                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
+                    <Package className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">أداة المنتجات غير مفعلة</h2>
+                <p className="text-muted-foreground mb-6 max-w-sm">
+                    هذه الميزة معطلة حالياً. يمكنك تفعيلها من صفحة التكاملات.
+                </p>
+                <Link href="/integrations">
+                    <Button variant="outline" className="gap-2">
+                        <Link2 className="h-4 w-4" />
+                        الذهاب للتكاملات
+                    </Button>
+                </Link>
+            </div>
+        )
+    }
 
     type Product = {
         id: string | number
@@ -110,10 +154,10 @@ export default function ProductsPage() {
     }, [fetchProducts, isLoadingMore, page, totalPages, userId, organizationId])
 
     useEffect(() => {
-        if (connection && !hasFetched && !isLoading) {
+        if (connection && !hasFetched && !isLoading && orgTools !== undefined && isProductsEnabled) {
             handleFetchProducts(true)
         }
-    }, [connection, hasFetched, isLoading, handleFetchProducts])
+    }, [connection, hasFetched, isLoading, handleFetchProducts, orgTools, isProductsEnabled])
 
     useEffect(() => {
         const el = sentinelRef.current
