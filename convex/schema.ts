@@ -441,4 +441,44 @@ export default defineSchema({
       searchField: "name",
       filterFields: ["userId", "organizationId", "isActive"]
     }),
+
+  // Booking Tool
+  bookings: defineTable({
+    organizationId: v.id("organizations"),
+    contactId: v.optional(v.id("contacts")), // Linked contact
+    contactPhone: v.string(), // Snapshot of phone details
+    contactName: v.string(), // Snapshot of contact name
+    title: v.string(),
+    description: v.optional(v.string()),
+    scheduledAt: v.number(), // Timestamp
+    duration: v.number(), // Minutes
+    status: v.union(
+      v.literal("pending"),
+      v.literal("confirmed"),
+      v.literal("completed"),
+      v.literal("cancelled"),
+      v.literal("no_show")
+    ),
+    location: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    assignedTo: v.optional(v.id("users")), // Assigned team member
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_org", ["organizationId"])
+    .index("by_org_date", ["organizationId", "scheduledAt"])
+    .index("by_org_status", ["organizationId", "status"])
+    .index("by_contact", ["contactId"]),
+
+  // Organization Tools - Activated features per org
+  organizationTools: defineTable({
+    organizationId: v.id("organizations"),
+    toolId: v.string(), // "bookings", "products", "campaigns", etc.
+    isActive: v.boolean(),
+    aiEnabled: v.boolean(), // Can AI agent use this tool?
+    config: v.optional(v.any()), // Tool-specific settings
+    activatedAt: v.number(),
+    activatedBy: v.id("users"),
+  }).index("by_org", ["organizationId"])
+    .index("by_org_tool", ["organizationId", "toolId"]),
 });

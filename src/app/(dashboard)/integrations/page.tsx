@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { logger } from "@/lib/logger"
 import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
-import { useAction, useQuery } from "convex/react"
+import { useAction, useQuery, useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -15,7 +15,6 @@ import { useOrganizationContext } from "@/hooks/useOrganizationContext"
 import {
     Link2,
     Check,
-    ExternalLink,
     MessageSquare,
     RefreshCw,
     Package,
@@ -24,8 +23,45 @@ import {
     Settings,
     CheckCircle2,
     XCircle,
+    Calendar,
+    Bot,
+    Megaphone,
+    ExternalLink,
 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+
+// All available tools and integrations
+const ALL_APPS = [
+    {
+        id: "bookings",
+        type: "tool",
+        name: "الحجوزات",
+        description: "إدارة المواعيد والحجوزات مع عملائك. جدولة الاجتماعات وتتبع المواعيد.",
+        icon: Calendar,
+        color: "#8B5CF6",
+        href: "/bookings",
+    },
+    {
+        id: "salla",
+        type: "integration",
+        name: "سلة",
+        description: "ربط متجرك على سلة لمزامنة المنتجات والطلبات والعملاء.",
+        icon: ShoppingBag,
+        color: "#004D3D",
+        href: null,
+    },
+    {
+        id: "whatsapp",
+        type: "integration",
+        name: "واتساب",
+        description: "ربط WhatsApp Business API لإرسال واستقبال الرسائل.",
+        icon: MessageSquare,
+        color: "#128C7E",
+        href: "/integrations/webhook",
+    },
+]
 
 export default function IntegrationsPage() {
     const searchParams = useSearchParams()
@@ -44,8 +80,14 @@ export default function IntegrationsPage() {
         api.meta.getConnection,
         organizationId ? { organizationId } : userId ? { userId } : "skip"
     )
+
+    const orgTools = useQuery(api.organizationTools.list, userId ? { userId } : "skip")
+    const canManage = useQuery(api.organizationTools.canManageTools, userId ? { userId } : "skip")
+
     const disconnectSalla = useUserMutation(api.salla.disconnect)
     const disconnectMeta = useAction(api.meta.disconnect)
+    const toggleTool = useMutation(api.organizationTools.toggle)
+    const toggleAi = useMutation(api.organizationTools.toggleAi)
 
     const [isConnecting, setIsConnecting] = useState(false)
     const [showNotification, setShowNotification] = useState(!!success || !!error)
@@ -57,7 +99,7 @@ export default function IntegrationsPage() {
         }
     }, [showNotification])
 
-    const handleConnect = () => {
+    const handleSallaConnect = () => {
         setIsConnecting(true)
         const clientId = process.env.NEXT_PUBLIC_SALLA_CLIENT_ID
         const redirectUri = process.env.NEXT_PUBLIC_SALLA_REDIRECT_URI
@@ -80,35 +122,66 @@ export default function IntegrationsPage() {
     const handleDisconnectSalla = async () => {
         if (!userId) return
         try {
-            setIsConnecting(true)
-            await disconnectSalla({
-                userId,
-                ...(organizationId && { organizationId })
-            })
+            await disconnectSalla({ userId, ...(organizationId && { organizationId }) })
             window.location.reload()
         } catch (err: any) {
             logger.error("Disconnect Salla error:", err)
-            setIsConnecting(false)
         }
     }
 
     const handleDisconnectMeta = async () => {
         if (!userId) return
         try {
-            setIsConnecting(true)
-            await disconnectMeta({
-                userId,
-                ...(organizationId && { organizationId })
-            })
+            await disconnectMeta({ userId, ...(organizationId && { organizationId }) })
             window.location.reload()
         } catch (err: any) {
             logger.error("Disconnect error:", err)
-            setIsConnecting(false)
         }
     }
 
-    const isSallaConnected = !!sallaConnection
-    const isMetaConnected = metaConnection?.connected || false
+    const getAppStatus = (appId: string) => {
+        if (appId === "salla") return !!sallaConnection
+        if (appId === "whatsapp") return metaConnection?.connected || false
+        return orgTools?.find((t: any) => t.toolId === appId)?.isActive ?? false
+    }
+
+    const getAiStatus = (appId: string) => {
+        return orgTools?.find((t: any) => t.toolId === appId)?.aiEnabled ?? false
+    }
+
+    const handleToggle = async (appId: string, checked: boolean) => {
+        if (!userId) return
+
+        // Handle integrations separately
+        if (appId === "salla") {
+            if (checked) handleSallaConnect()
+            else handleDisconnectSalla()
+            return
+        }
+        if (appId === "whatsapp") {
+            if (!checked) handleDisconnectMeta()
+            return
+        }
+
+        // Handle tools
+        try {
+            await toggleTool({ userId, toolId: appId, isActive: checked })
+            toast.success(checked ? "تم تفعيل الأداة" : "تم تعطيل الأداة")
+        } catch (err: any) {
+            toast.error(err.message || "حدث خطأ")
+        }
+    }
+
+    const handleAiToggle = async (appId: string) => {
+        if (!userId) return
+        const currentAi = getAiStatus(appId)
+        try {
+            await toggleAi({ userId, toolId: appId, aiEnabled: !currentAi })
+            toast.success(!currentAi ? "تم تفعيل AI" : "تم تعطيل AI")
+        } catch (err: any) {
+            toast.error(err.message || "حدث خطأ")
+        }
+    }
 
     return (
         <div className="space-y-6 p-4 sm:p-6">
@@ -118,7 +191,7 @@ export default function IntegrationsPage() {
                     {success ? (
                         <>
                             <CheckCircle2 className="h-5 w-5" />
-                            <span>تم ربط متجر سلة بنجاح!</span>
+                            <span>تم الربط بنجاح!</span>
                         </>
                     ) : (
                         <>
@@ -131,168 +204,97 @@ export default function IntegrationsPage() {
 
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-foreground">التكاملات</h1>
-                <p className="text-muted-foreground text-sm mt-1">ربط الخدمات الخارجية مع منصتك</p>
+                <h1 className="text-2xl font-bold text-foreground">التطبيقات والتكاملات</h1>
+                <p className="text-muted-foreground text-sm mt-1">تفعيل وإدارة الأدوات والخدمات الخارجية</p>
             </div>
 
-            {/* Integration Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
-                {/* Salla Integration Card */}
-                <Card>
-                    <div className="h-2 bg-[#004D3D]" />
-                    <CardHeader>
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-xl bg-[#004D3D] flex items-center justify-center">
-                                    <ShoppingBag className="h-6 w-6 text-white" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-xl">سلة</CardTitle>
-                                    <CardDescription>Salla E-commerce Platform</CardDescription>
-                                </div>
-                            </div>
-                            {isSallaConnected ? (
-                                <Badge className="bg-success text-success-foreground gap-1 text-xs">
-                                    <Check className="h-3 w-3" /> متصل
-                                </Badge>
-                            ) : (
-                                <Badge variant="outline" className="gap-1 text-xs">
-                                    <AlertCircle className="h-3 w-3" /> غير متصل
-                                </Badge>
-                            )}
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                            اربط متجرك على سلة لمزامنة المنتجات والأسعار والمخزون.
-                        </p>
+            {/* Apps Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {ALL_APPS.map((app) => {
+                    const isActive = getAppStatus(app.id)
+                    const isAiEnabled = getAiStatus(app.id)
+                    const Icon = app.icon
 
-                        {isSallaConnected && sallaConnection && (
-                            <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">اسم المتجر</span>
-                                    <span className="font-medium">{sallaConnection.storeName || "غير محدد"}</span>
-                                </div>
-                                <Link href="/products">
-                                    <Button variant="outline" size="sm" className="w-full gap-2">
-                                        <Package className="h-4 w-4" />
-                                        عرض المنتجات
-                                    </Button>
-                                </Link>
-                            </div>
-                        )}
+                    return (
+                        <Card key={app.id} className={cn(
+                            "relative overflow-hidden transition-all",
+                            isActive && "ring-1 ring-primary/30"
+                        )}>
+                            {/* Color bar */}
+                            <div className="h-1.5" style={{ backgroundColor: app.color }} />
 
-                        <div className="flex gap-2">
-                            {isSallaConnected ? (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={handleDisconnectSalla}
-                                >
-                                    إلغاء الربط
-                                </Button>
-                            ) : (
-                                <Button
-                                    className="flex-1 gap-2 bg-[#004D3D] hover:bg-[#003D2D]"
-                                    onClick={handleConnect}
-                                    disabled={isConnecting}
-                                >
-                                    {isConnecting ? (
-                                        <>
-                                            <RefreshCw className="h-4 w-4 animate-spin" />
-                                            جاري الربط...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Link2 className="h-4 w-4" />
-                                            ربط متجر سلة
-                                        </>
-                                    )}
-                                </Button>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+                            <CardHeader className="pb-3">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="w-11 h-11 rounded-xl flex items-center justify-center"
+                                            style={{ backgroundColor: app.color }}
+                                        >
+                                            <Icon className="h-5 w-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-base">{app.name}</CardTitle>
+                                            <Badge
+                                                variant={isActive ? "default" : "outline"}
+                                                className={cn(
+                                                    "text-[10px] mt-1",
+                                                    isActive && "bg-success text-success-foreground"
+                                                )}
+                                            >
+                                                {isActive ? "مفعل" : "غير مفعل"}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={isActive}
+                                        onCheckedChange={(checked) => handleToggle(app.id, checked)}
+                                        disabled={!canManage || (app.id === "whatsapp" && !isActive)}
+                                    />
+                                </div>
+                            </CardHeader>
 
-                {/* WhatsApp Business Integration Card */}
-                <Card>
-                    <div className="h-2 bg-[#128C7E]" />
-                    <CardHeader>
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-xl bg-[#128C7E] flex items-center justify-center">
-                                    <MessageSquare className="h-6 w-6 text-white" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-xl">WhatsApp Business</CardTitle>
-                                    <CardDescription>Meta WhatsApp Business API</CardDescription>
-                                </div>
-                            </div>
-                            {isMetaConnected ? (
-                                <Badge className="bg-success text-success-foreground gap-1 text-xs">
-                                    <Check className="h-3 w-3" /> متصل
-                                </Badge>
-                            ) : (
-                                <Badge variant="outline" className="gap-1 text-xs">
-                                    <AlertCircle className="h-3 w-3" /> غير متصل
-                                </Badge>
-                            )}
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                            اربط حساب Meta Business لإرسال واستقبال الرسائل عبر WhatsApp.
-                        </p>
+                            <CardContent className="space-y-4">
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    {app.description}
+                                </p>
 
-                        {isMetaConnected && metaConnection && (
-                            <div className="p-3 bg-muted/50 rounded-lg space-y-2 text-sm">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">Phone Number ID</span>
-                                    <span className="font-mono text-xs">{metaConnection.phoneNumberId || "غير محدد"}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-muted-foreground">WABA ID</span>
-                                    <span className="font-mono text-xs">{metaConnection.wabaId || "غير محدد"}</span>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex gap-2">
-                            {isMetaConnected ? (
-                                <>
-                                    <Link href="/integrations/webhook" className="flex-1">
-                                        <Button variant="outline" size="sm" className="w-full gap-2">
-                                            <Settings className="h-4 w-4" />
-                                            إعدادات Webhook
-                                        </Button>
-                                    </Link>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={handleDisconnectMeta}
-                                        disabled={isConnecting}
-                                    >
-                                        {isConnecting ? (
-                                            <RefreshCw className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            "إلغاء الربط"
+                                {isActive && (
+                                    <div className="flex items-center gap-2">
+                                        {/* AI Toggle for tools only */}
+                                        {app.type === "tool" && canManage && (
+                                            <Button
+                                                variant={isAiEnabled ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => handleAiToggle(app.id)}
+                                                className={cn("gap-1.5", isAiEnabled && "bg-primary")}
+                                            >
+                                                <Bot className="h-3.5 w-3.5" />
+                                                AI
+                                            </Button>
                                         )}
-                                    </Button>
-                                </>
-                            ) : (
-                                <Link href="/integrations/webhook" className="flex-1">
-                                    <Button className="w-full gap-2 bg-[#128C7E] hover:bg-[#0F7A6D]">
-                                        <Link2 className="h-4 w-4" />
-                                        إعداد WhatsApp
-                                    </Button>
-                                </Link>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+
+                                        {/* Open/Configure button */}
+                                        {app.href && (
+                                            <Link href={app.href} className="flex-1">
+                                                <Button variant="outline" size="sm" className="w-full gap-2">
+                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                    فتح
+                                                </Button>
+                                            </Link>
+                                        )}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )
+                })}
             </div>
+
+            {!canManage && (
+                <p className="text-sm text-muted-foreground text-center">
+                    يمكن للمالك أو المسؤول فقط تعديل هذه الإعدادات
+                </p>
+            )}
         </div>
     )
 }

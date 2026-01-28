@@ -28,7 +28,8 @@ import {
   UserCog,
   ArrowRight,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  Calendar
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -69,6 +70,67 @@ const navigationItems = [
 
 // Sidebar Content Component
 function SidebarContent({ pathname, isCollapsed, onToggle }: { pathname: string; isCollapsed?: boolean; onToggle?: () => void }) {
+  const { currentOrganization } = useOrganizationContext()
+  const { userId } = useUserContext()
+  const activeTools = useQuery(api.organizationTools.getActiveTools, userId ? { userId } : "skip")
+
+  // Memoize active tools for easy lookup
+  const activeToolIds = (activeTools || []).map((t: any) => t.toolId)
+
+  // Define groups
+  interface SidebarItem {
+    href: string;
+    icon: any;
+    label: string;
+    toolId?: string;
+    alwaysVisible?: boolean;
+  }
+
+  interface SidebarGroup {
+    id: string;
+    label: string;
+    items: SidebarItem[];
+  }
+
+  const groups: SidebarGroup[] = [
+    {
+      id: "core",
+      label: "الرئيسية",
+      items: [
+        { href: "/dashboard", icon: LayoutDashboard, label: "لوحة التحكم", alwaysVisible: true },
+        { href: "/chat", icon: MessageSquare, label: "المحادثات", alwaysVisible: true },
+        { href: "/customers", icon: Users, label: "العملاء", alwaysVisible: true },
+      ]
+    },
+    {
+      id: "marketing",
+      label: "التسويق",
+      items: [
+        { href: "/campaigns", icon: Megaphone, label: "الحملات", toolId: "campaigns", alwaysVisible: true }, // Core feature for now
+        { href: "/templates", icon: FileText, label: "القوالب", toolId: "templates", alwaysVisible: true },
+        { href: "/workflows", icon: Zap, label: "الأتمتة", toolId: "workflows", alwaysVisible: true },
+      ]
+    },
+    {
+      id: "tools",
+      label: "الأدوات",
+      items: [
+        { href: "/products", icon: Package, label: "المنتجات", toolId: "products", alwaysVisible: true }, // Core for now
+        { href: "/bookings", icon: Calendar, label: "الحجوزات", toolId: "bookings" }, // New optional tool
+      ]
+    },
+    {
+      id: "settings",
+      label: "الإعدادات",
+      items: [
+        { href: "/integrations", icon: Link2, label: "التكاملات", alwaysVisible: true },
+        { href: "/ai-settings", icon: Bot, label: "إعدادات الذكاء", alwaysVisible: true },
+        { href: "/users", icon: UserCog, label: "المستخدمين", alwaysVisible: true },
+        { href: "/settings", icon: Settings, label: "الإعدادات", alwaysVisible: true },
+      ]
+    }
+  ]
+
   return (
     <div className={cn(
       "flex flex-col h-full bg-sidebar transition-all duration-300",
@@ -104,25 +166,45 @@ function SidebarContent({ pathname, isCollapsed, onToggle }: { pathname: string;
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto overflow-x-hidden">
-        {navigationItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+      <nav className="flex-1 p-4 space-y-6 overflow-y-auto overflow-x-hidden">
+        {groups.map((group) => {
+          // Filter items based on active tools
+          const visibleItems = group.items.filter(item =>
+            item.alwaysVisible || (item.toolId && activeToolIds.includes(item.toolId))
+          )
+
+          if (visibleItems.length === 0) return null
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={isCollapsed ? item.label : undefined}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-sm font-medium transition-all group",
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                isCollapsed && "justify-center px-0 h-11"
+            <div key={group.id} className="space-y-2">
+              {!isCollapsed && (
+                <h3 className="text-xs font-semibold text-muted-foreground/50 px-3 select-none">
+                  {group.label}
+                </h3>
               )}
-            >
-              <item.icon className={cn("h-5 w-5 shrink-0 transition-transform group-hover:scale-110", isActive && "scale-105")} />
-              {!isCollapsed && <span className="truncate">{item.label}</span>}
-            </Link>
+              <div className="space-y-1">
+                {visibleItems.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      title={isCollapsed ? item.label : undefined}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-sm font-medium transition-all group",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        isCollapsed && "justify-center px-0 h-11"
+                      )}
+                    >
+                      <item.icon className={cn("h-5 w-5 shrink-0 transition-transform group-hover:scale-110", isActive && "scale-105")} />
+                      {!isCollapsed && <span className="truncate">{item.label}</span>}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
           )
         })}
       </nav>

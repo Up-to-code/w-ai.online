@@ -107,7 +107,7 @@ export const update = mutation({
         if (args.tags) {
             const oldTags = contact.tags || [];
             const addedTags = args.tags.filter(t => !oldTags.includes(t));
-            
+
             for (const tag of addedTags) {
                 await ctx.scheduler.runAfter(0, internal.workflows.checkTagWorkflows, {
                     organizationId: organizationId, // Organization-scoped
@@ -162,9 +162,9 @@ export const bulkCreate = mutation({
 });
 
 export const getById = query({
-    args: { 
+    args: {
         userId: v.id("users"), // User making the request
-        id: v.id("contacts") 
+        id: v.id("contacts")
     },
     handler: async (ctx, args) => {
         // Get user's current organization
@@ -177,5 +177,28 @@ export const getById = query({
             throw new Error("Contact not found or access denied");
         }
         return contact;
+    },
+});
+
+export const deleteContact = mutation({
+    args: {
+        userId: v.id("users"),
+        id: v.id("contacts")
+    },
+    handler: async (ctx, args) => {
+        const user = await ctx.db.get(args.userId);
+        if (!user || !user.currentOrganizationId) {
+            throw new Error("Unauthorized");
+        }
+        const contact = await ctx.db.get(args.id);
+        if (!contact || contact.organizationId !== user.currentOrganizationId) {
+            throw new Error("Contact not found");
+        }
+
+        // Note: In a real production app, we might want to cascade delete or soft delete
+        // For now, we just delete the contact record.
+        // Linked chats, bookings, etc. will effectively be orphaned or handled by UI checks.
+
+        await ctx.db.delete(args.id);
     },
 });

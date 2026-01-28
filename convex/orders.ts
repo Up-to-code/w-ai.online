@@ -16,6 +16,29 @@ export const list = query({
     },
 });
 
+export const listByCustomer = query({
+    args: {
+        userId: v.id("users"),
+        phone: v.string()
+    },
+    handler: async (ctx, args) => {
+        const user = await ctx.db.get(args.userId);
+        if (!user || !user.currentOrganizationId) return [];
+
+        // Note: Assuming orders might currently store customerPhone separately
+        // We might need to index by phone if we haven't already
+        // Listing all org orders and filtering for now since index 'by_org' exists
+        // Optimally we would add an index 'by_org_phone' to orders table
+
+        const orders = await ctx.db
+            .query("orders")
+            .withIndex("by_org", (q) => q.eq("organizationId", user.currentOrganizationId))
+            .collect();
+
+        return orders.filter(o => o.customerPhone === args.phone);
+    },
+});
+
 export const create = mutation({
     args: {
         orderNumber: v.string(),
