@@ -14,7 +14,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel }: AudioRecorderPr
     const [duration, setDuration] = useState(0)
     const mediaRecorder = useRef<MediaRecorder | null>(null)
     const chunks = useRef<Blob[]>([])
-    const timerRef = useRef<NodeJS.Timeout | null>(null)
+    const timerRef = useRef<any>(null)
     const [isFinishing, setIsFinishing] = useState(false)
 
     useEffect(() => {

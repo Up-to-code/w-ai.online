@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div dir="rtl">
 
-## Getting Started
+# W-AI.online 🤖
 
-First, run the development server:
+منصة واتساب ذكية مدعومة بالذكاء الاصطناعي لإدارة العملاء والحجوزات والمحادثات.
+
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![Convex](https://img.shields.io/badge/Convex-Backend-orange)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+
+</div>
+
+## ✨ Features
+
+### 💬 WhatsApp Integration
+- Real-time chat with AI-powered responses
+- Template message support (including carousels)
+- Media handling (images, videos, documents, audio)
+- Push notifications for incoming messages
+
+### 📅 Booking System
+- Calendar view (Month/List)
+- Booking configuration (availability, meeting defaults)
+- Customer booking history
+- Quick actions (reschedule, cancel, confirm)
+
+### 👥 Customer Management
+- Contact database with tags
+- Linked data overview (chats, bookings, orders)
+- Safe delete with dependency warnings
+- Excel import/export
+
+### 🛒 Orders & Campaigns
+- Order tracking and status management
+- Campaign builder with template selection
+- Workflow automation triggers
+
+### ⚙️ Settings & Configuration
+- Organization-level settings
+- Team permissions
+- AI agent configuration
+- WhatsApp business settings
+
+---
+
+## 🚀 Getting Started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+# Install dependencies
+bun install
+
+# Run Convex backend
+bunx convex dev
+
+# Run Next.js frontend
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🏗️ Tech Stack
 
-## Learn More
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 16, React, Tailwind CSS |
+| Backend | Convex (serverless) |
+| Auth | Better Auth |
+| AI | OpenAI GPT-4 |
+| Messaging | WhatsApp Cloud API |
+| UI | Shadcn/ui, Radix UI |
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📁 Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+├── src/
+│   ├── app/              # Next.js App Router pages
+│   │   ├── (dashboard)/  # Dashboard routes (chat, bookings, customers, etc.)
+│   │   └── (site)/       # Public site pages
+│   ├── components/       # React components
+│   │   ├── ui/           # Shadcn UI components
+│   │   └── dashboard/    # Dashboard-specific components
+│   └── hooks/            # Custom React hooks
+├── convex/               # Convex backend
+│   ├── schema.ts         # Database schema
+│   ├── chat.ts           # Chat queries/mutations
+│   ├── bookings.ts       # Booking system
+│   ├── contacts.ts       # Customer management
+│   └── agent.ts          # AI agent logic
+└── public/               # Static assets
+```
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔧 Environment Variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+CONVEX_DEPLOYMENT=
+NEXT_PUBLIC_CONVEX_URL=
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+OPENAI_API_KEY=
+```
+
+---
+
+## 📄 License
+
+MIT

@@ -58,9 +58,7 @@ const bookingSchema = z.object({
     contactId: z.optional(z.string()),
     contactName: z.string().min(2, "اسم العميل مطلوب"),
     contactPhone: z.string().min(8, "رقم الهاتف مطلوب"),
-    date: z.date({
-        required_error: "التاريخ مطلوب",
-    }),
+    date: z.date(),
     time: z.string(), // HH:mm
     duration: z.string(), // minutes as string
     status: z.enum(["pending", "confirmed", "completed", "cancelled", "no_show"]),
@@ -180,7 +178,7 @@ export function BookingDialog({ open, onOpenChange, booking, defaultDate }: Book
 
     // Handle contact selection
     const handleSelectContact = (contactId: string) => {
-        const contact = contacts.find(c => c._id === contactId)
+        const contact = contacts.find((c: any) => c._id === contactId)
         if (contact) {
             form.setValue("contactId", contact._id)
             form.setValue("contactName", contact.name)
