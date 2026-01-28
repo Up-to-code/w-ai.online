@@ -20,9 +20,13 @@ export const updateProfile = mutation({
     if (!user) throw new Error("المستخدم غير موجود");
 
     // Check if user is trying to update their own profile or has admin rights
-    // For now, we rely on the fact that userId is passed, but in a real app we should check identity
-    // const identity = await ctx.auth.getUserIdentity();
-    // if (!identity) throw new Error("Unauthenticated");
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    // Verify identity matches the user being updated
+    if (user.tokenIdentifier !== identity.tokenIdentifier) {
+      throw new Error("Unauthorized");
+    }
 
     await ctx.db.patch(userId, updates);
     return true;

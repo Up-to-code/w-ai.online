@@ -19,7 +19,7 @@ export default function CustomersPage() {
 
   // Permissions
   const role = useQuery(api.permissions.getCurrentUserRole, userId ? { userId } : "skip")
-  const canManage = role !== "viewer"
+  // Removed unused canManage variable
 
   // 1. Paginated Query (Default View)
   const {
@@ -76,18 +76,26 @@ export default function CustomersPage() {
   // Ideally tags should come from a separate query or aggregation. 
   // For now, let's just use the current display set to avoid confusing filters.
   const uniqueTags = useMemo(() => {
-    if (isFiltering && allContacts) {
-      const set = new Set<string>()
-      allContacts.forEach((c: any) => (c.tags || []).forEach((t: any) => set.add(t)))
-      return Array.from(set).sort()
-    }
-    // Fallback: If not filtering, we only show tags from visible 20 items? 
-    // This is a UI limitation of client-side tags. Let's stick to visible for now or fetch stats.
     const set = new Set<string>()
-      ; (paginatedContacts || []).forEach((c: any) => (c.tags || []).forEach((t: any) => set.add(t)))
+    if (isFiltering && allContacts) {
+      allContacts.forEach((c: any) => {
+        (c.tags || []).forEach((t: any) => {
+          set.add(t)
+        })
+      })
+    } else {
+      // Fallback: If not filtering, we only show tags from visible 20 items? 
+      // This is a UI limitation of client-side tags. Let's stick to visible for now or fetch stats.
+      (paginatedContacts || []).forEach((c: any) => {
+        (c.tags || []).forEach((t: any) => {
+          set.add(t)
+        })
+      })
+    }
     return Array.from(set).sort()
   }, [isFiltering, allContacts, paginatedContacts])
 
+  const isLoading = (isFiltering && !allContacts) || (!isFiltering && !paginatedContacts)
 
   return (
     <div className="space-y-10 p-6 sm:p-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto">
@@ -129,7 +137,7 @@ export default function CustomersPage() {
           </div>
         </CardHeader>
         <CardContent className="p-8 pt-0">
-          {!paginatedContacts && !isFiltering ? (
+          {isLoading ? (
             <div className="py-20 text-center flex flex-col items-center gap-4">
               <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
               <p className="font-bold text-muted-foreground">جارٍ التحميل...</p>

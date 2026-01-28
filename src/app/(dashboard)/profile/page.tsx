@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserCog, History, Shield } from "lucide-react"
 
 export default function ProfilePage() {
-    const { userId, user, workOSUser } = useUserContext()
+    const { userId, user, workOSUser, isLoading } = useUserContext()
     const { currentOrganization } = useOrganizationContext()
 
     // Fetch user role if not in user object directly (depends on schema/sync)
@@ -25,10 +25,20 @@ export default function ProfilePage() {
         image: user.image || workOSUser?.profilePictureUrl
     } : null
 
-    if (!userWithRole) {
+    if (isLoading) {
         return (
             <div className="flex h-full items-center justify-center p-8">
                 <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+            </div>
+        )
+    }
+
+    if (!userWithRole) {
+        return (
+            <div className="flex h-full items-center justify-center p-8">
+                <div className="bg-destructive/10 text-destructive p-4 rounded-lg">
+                    فشل تحميل بيانات المستخدم. الرجاء المحاولة مرة أخرى لاحقاً.
+                </div>
             </div>
         )
     }

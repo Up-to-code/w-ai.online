@@ -67,7 +67,7 @@ export function UserNav() {
                 <DropdownMenuSeparator />
 
                 {/* WorkOS Logout Link - Standard Pattern */}
-                <a href="https://w-ai-saas-production.authkit.app/logout" className="w-full cursor-pointer">
+                <a href={process.env.NEXT_PUBLIC_WORKOS_LOGOUT_URL || "/"} className="w-full cursor-pointer">
                     <DropdownMenuItem className="text-destructive focus:text-destructive cursor-pointer">
                         <LogOut className="mr-2 h-4 w-4 ml-2" />
                         <span>تسجيل الخروج</span>

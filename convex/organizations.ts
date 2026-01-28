@@ -185,6 +185,7 @@ export const updateOrganization = mutation({
     userId: v.id("users"),
     organizationId: v.id("organizations"),
     name: v.optional(v.string()),
+    slug: v.optional(v.string()), // Added ability to update slug
     email: v.optional(v.string()),
     phone: v.optional(v.string()),
     website: v.optional(v.string()),
@@ -215,6 +216,30 @@ export const updateOrganization = mutation({
     if (args.timezone !== undefined) updates.timezone = args.timezone;
     if (args.language !== undefined) updates.language = args.language;
     if (args.settings !== undefined) updates.settings = args.settings;
+
+    // Handle slug update if provided
+    if (args.slug !== undefined) {
+      const slugRegex = /^[a-zA-Z0-9_-]+$/;
+      if (!slugRegex.test(args.slug)) {
+        throw new Error("يجب أن يحتوي المعرف على أحرف إنجليزية وأرقام فقط");
+      }
+      const normalizedSlug = args.slug.toLowerCase();
+
+      // Check if trying to change to a new slug
+      const currentOrg = await ctx.db.get(args.organizationId);
+      if (currentOrg && currentOrg.slug !== normalizedSlug) {
+        // Check uniqueness
+        const existingToken = await ctx.db
+          .query("organizations")
+          .withIndex("by_slug", (q) => q.eq("slug", normalizedSlug))
+          .first();
+
+        if (existingToken) {
+          throw new Error("هذا المعرف مستخدم بالفعل");
+        }
+        updates.slug = normalizedSlug;
+      }
+    }
 
     await ctx.db.patch(args.organizationId, updates);
     return true;

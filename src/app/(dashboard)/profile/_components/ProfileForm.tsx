@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
@@ -26,6 +26,26 @@ export function ProfileForm({ user }: ProfileFormProps) {
         title: user.title || "",
         bio: user.bio || "",
     })
+
+    // Sync state with user prop
+    useEffect(() => {
+        setFormData({
+            name: user.name || "",
+            phone: user.phone || "",
+            title: user.title || "",
+            bio: user.bio || "",
+        })
+    }, [user])
+
+    const handleCancel = () => {
+        setIsEditing(false)
+        setFormData({
+            name: user.name || "",
+            phone: user.phone || "",
+            title: user.title || "",
+            bio: user.bio || "",
+        })
+    }
 
     // Handle changes
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -75,7 +95,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 </div>
                 <Button
                     variant={isEditing ? "ghost" : "outline"}
-                    onClick={() => setIsEditing(!isEditing)}
+                    onClick={isEditing ? handleCancel : () => setIsEditing(true)}
                 >
                     {isEditing ? "إلغاء" : "تعديل المعلومات"}
                 </Button>
@@ -173,7 +193,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                         </div>
 
                         <div className="flex justify-end pt-4 border-t border-border/50 gap-2">
-                            <Button type="button" variant="ghost" onClick={() => setIsEditing(false)}>إلغاء</Button>
+                            <Button type="button" variant="ghost" onClick={handleCancel}>إلغاء</Button>
                             <Button type="submit" disabled={isLoading} className="gap-2 min-w-[120px]">
                                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                                 حفظ التغييرات
