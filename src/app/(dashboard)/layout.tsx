@@ -115,7 +115,7 @@ function SidebarContent({ pathname, isCollapsed, onToggle }: { pathname: string;
       id: "tools",
       label: "الأدوات",
       items: [
-        { href: "/products", icon: Package, label: "المنتجات", toolId: "products", alwaysVisible: true }, // Core for now
+        { href: "/products", icon: Package, label: "المنتجات", toolId: "products" }, // Core for now
         { href: "/bookings", icon: Calendar, label: "الحجوزات", toolId: "bookings" }, // New optional tool
       ]
     },

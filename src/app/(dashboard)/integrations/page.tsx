@@ -44,6 +44,15 @@ const ALL_APPS = [
         href: "/bookings",
     },
     {
+        id: "products",
+        type: "tool",
+        name: "المنتجات",
+        description: "إدارة المخزون والمنتجات والخدمات.",
+        icon: Package,
+        color: "#F59E0B",
+        href: "/products",
+    },
+    {
         id: "salla",
         type: "integration",
         name: "سلة",

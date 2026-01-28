@@ -37,7 +37,31 @@ export default function ProductsPage() {
         api.salla.getConnection,
         organizationId ? { organizationId } : userId ? { userId } : "skip"
     )
+    const orgTools = useQuery(api.organizationTools.list, userId ? { userId } : "skip")
     const fetchProducts = useAction(api.salla.fetchProducts)
+
+    const isProductsEnabled = orgTools?.find((t: any) => t.toolId === "products")?.isActive ?? false
+
+    // Redirect or show disabled state if tool is not enabled
+    if (orgTools !== undefined && !isProductsEnabled) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
+                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
+                    <Package className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">أداة المنتجات غير مفعلة</h2>
+                <p className="text-muted-foreground mb-6 max-w-sm">
+                    هذه الميزة معطلة حالياً. يمكنك تفعيلها من صفحة التكاملات.
+                </p>
+                <Link href="/integrations">
+                    <Button variant="outline" className="gap-2">
+                        <Link2 className="h-4 w-4" />
+                        الذهاب للتكاملات
+                    </Button>
+                </Link>
+            </div>
+        )
+    }
 
     type Product = {
         id: string | number
