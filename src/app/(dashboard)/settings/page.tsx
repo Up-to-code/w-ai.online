@@ -3,129 +3,34 @@
 import { useState, useEffect } from "react"
 import { useUserContext } from "@/hooks/useUserContext"
 import { useOrganizationContext } from "@/hooks/useOrganizationContext"
-import { useUserQuery, useUserMutation } from "@/hooks/useUserQuery"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
-  User,
-  Building2,
   Settings as SettingsIcon,
   Save,
-  Upload,
-  Mail,
-  Phone,
-  Globe,
-  Clock,
-  Languages,
   Bell,
-  Bot,
-  Shield,
-  ShoppingBag,
-  MessageSquare,
-  CheckCircle2,
-  XCircle,
-  Link2,
   CreditCard,
-  Crown,
-  Lock,
+  ArrowUpRight,
+  Mail,
   Volume2,
   VolumeX,
-  ArrowUpRight,
 } from "lucide-react"
 import { toast } from "sonner"
-import { initialsFromName, cn } from "@/lib/utils"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 import Link from "next/link"
 
-// Permission constants (client-side copy)
-const PERMISSIONS = {
-  MANAGE_ORG: "manage_org",
-  MANAGE_MEMBERS: "manage_members",
-  MANAGE_INTEGRATIONS: "manage_integrations",
-  MANAGE_CAMPAIGNS: "manage_campaigns",
-  SEND_MESSAGES: "send_messages",
-  VIEW_REPORTS: "view_reports",
-  MANAGE_CONTACTS: "manage_contacts",
-  MANAGE_TEMPLATES: "manage_templates",
-  MANAGE_WORKFLOWS: "manage_workflows",
-} as const
-
-// Role to permissions mapping (client-side copy)
-const ROLE_PERMISSIONS: Record<string, string[]> = {
-  owner: [
-    PERMISSIONS.MANAGE_ORG,
-    PERMISSIONS.MANAGE_MEMBERS,
-    PERMISSIONS.MANAGE_INTEGRATIONS,
-    PERMISSIONS.MANAGE_CAMPAIGNS,
-    PERMISSIONS.SEND_MESSAGES,
-    PERMISSIONS.VIEW_REPORTS,
-    PERMISSIONS.MANAGE_CONTACTS,
-    PERMISSIONS.MANAGE_TEMPLATES,
-    PERMISSIONS.MANAGE_WORKFLOWS,
-  ],
-  admin: [
-    PERMISSIONS.MANAGE_INTEGRATIONS,
-    PERMISSIONS.MANAGE_CAMPAIGNS,
-    PERMISSIONS.SEND_MESSAGES,
-    PERMISSIONS.VIEW_REPORTS,
-    PERMISSIONS.MANAGE_CONTACTS,
-    PERMISSIONS.MANAGE_TEMPLATES,
-    PERMISSIONS.MANAGE_WORKFLOWS,
-  ],
-  agent: [
-    PERMISSIONS.MANAGE_CAMPAIGNS,
-    PERMISSIONS.SEND_MESSAGES,
-    PERMISSIONS.VIEW_REPORTS,
-    PERMISSIONS.MANAGE_CONTACTS,
-  ],
-  viewer: [
-    PERMISSIONS.VIEW_REPORTS,
-  ],
-}
-
-function getPermissionsForRole(role: string | null): string[] {
-  if (!role) return []
-  return ROLE_PERMISSIONS[role] || []
-}
-
-const permissionLabels: Record<string, string> = {
-  [PERMISSIONS.MANAGE_ORG]: "إدارة المنظمة",
-  [PERMISSIONS.MANAGE_MEMBERS]: "إدارة الأعضاء",
-  [PERMISSIONS.MANAGE_INTEGRATIONS]: "إدارة التكاملات",
-  [PERMISSIONS.MANAGE_CAMPAIGNS]: "إدارة الحملات",
-  [PERMISSIONS.SEND_MESSAGES]: "إرسال الرسائل",
-  [PERMISSIONS.VIEW_REPORTS]: "عرض التقارير",
-  [PERMISSIONS.MANAGE_CONTACTS]: "إدارة العملاء",
-  [PERMISSIONS.MANAGE_TEMPLATES]: "إدارة القوالب",
-  [PERMISSIONS.MANAGE_WORKFLOWS]: "إدارة الأتمتة",
-}
-
-const allPermissions = Object.values(PERMISSIONS)
+// Permission constants (removed)
 
 export default function SettingsPage() {
   const { userId, user } = useUserContext()
-  const { currentOrganization, organizations, userRole } = useOrganizationContext()
-  const updateProfile = useUserMutation(api.users.updateProfile)
-  const updateOrganization = useMutation(api.organizations.updateOrganization)
-  const getMembers = useQuery(api.organizations.getMembers, currentOrganization?._id ? { organizationId: currentOrganization._id } : "skip")
-  const updateMemberRole = useMutation(api.organizations.updateMemberRole)
-  const removeMember = useMutation(api.organizations.removeMember)
+  const { currentOrganization, userRole } = useOrganizationContext()
 
   // Settings queries
   const userSettings = useQuery(
@@ -134,66 +39,14 @@ export default function SettingsPage() {
   )
   const updateUserSettings = useMutation(api.settings.updateUserSettings)
 
-  // Connection status queries
-  const organizationId = currentOrganization?._id
-  const sallaConnection = useQuery(
-    api.salla.getConnection,
-    organizationId ? { organizationId } : userId ? { userId } : "skip"
-  )
-  const metaConnection = useQuery(
-    api.meta.getConnection,
-    organizationId ? { organizationId } : userId ? { userId } : "skip"
-  )
-
-  const isSallaConnected = !!sallaConnection
-  const isMetaConnected = metaConnection?.connected || false
-
   const [activeTab, setActiveTab] = useState("general")
   const [isSaving, setIsSaving] = useState(false)
-
-  // Profile state
-  const [name, setName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
-
-  // Organization state
-  const [orgName, setOrgName] = useState("")
-  const [orgEmail, setOrgEmail] = useState("")
-  const [orgPhone, setOrgPhone] = useState("")
-  const [orgWebsite, setOrgWebsite] = useState("")
-  const [orgTimezone, setOrgTimezone] = useState("")
-  const [orgLanguage, setOrgLanguage] = useState("")
 
   // General Settings state
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [globalNotificationsEnabled, setGlobalNotificationsEnabled] = useState(true)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const [emailEnabled, setEmailEnabled] = useState(false)
-  const [aiAutoResponseEnabled, setAiAutoResponseEnabled] = useState(false)
-
-  // Load user data
-  useEffect(() => {
-    if (user) {
-      setName(user.name || "")
-      setPhone(user.phone || "")
-      if (user.avatarUrl) {
-        setAvatarPreview(user.avatarUrl)
-      }
-    }
-  }, [user])
-
-  // Load organization data
-  useEffect(() => {
-    if (currentOrganization) {
-      setOrgName(currentOrganization.name || "")
-      setOrgEmail(currentOrganization.email || "")
-      setOrgPhone(currentOrganization.phone || "")
-      setOrgWebsite(currentOrganization.website || "")
-      setOrgTimezone(currentOrganization.timezone || "")
-      setOrgLanguage(currentOrganization.language || "")
-    }
-  }, [currentOrganization])
 
   // Load user settings
   useEffect(() => {
@@ -202,51 +55,8 @@ export default function SettingsPage() {
       setGlobalNotificationsEnabled(userSettings.globalNotificationsEnabled)
       setSoundEnabled(userSettings.soundEnabled)
       setEmailEnabled(userSettings.emailEnabled)
-      setAiAutoResponseEnabled(userSettings.aiAutoResponseEnabled)
     }
   }, [userSettings])
-
-  const handleSaveProfile = async () => {
-    if (!userId) return
-    setIsSaving(true)
-    try {
-      await updateProfile({
-        name: name.trim() || undefined,
-        phone: phone.trim() || undefined,
-      })
-      toast.success("تم حفظ الملف الشخصي بنجاح")
-    } catch (error: any) {
-      toast.error(error?.message || "فشل حفظ الملف الشخصي")
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleSaveOrganization = async () => {
-    if (!userId || !currentOrganization?._id) return
-    if (userRole !== "owner") {
-      toast.error("فقط مالك المنظمة يمكنه تعديل هذه الإعدادات")
-      return
-    }
-    setIsSaving(true)
-    try {
-      await updateOrganization({
-        userId,
-        organizationId: currentOrganization._id,
-        name: orgName.trim() || undefined,
-        email: orgEmail.trim() || undefined,
-        phone: orgPhone.trim() || undefined,
-        website: orgWebsite.trim() || undefined,
-        timezone: orgTimezone || undefined,
-        language: orgLanguage || undefined,
-      })
-      toast.success("تم حفظ إعدادات المنظمة بنجاح")
-    } catch (error: any) {
-      toast.error(error?.message || "فشل حفظ إعدادات المنظمة")
-    } finally {
-      setIsSaving(false)
-    }
-  }
 
   const handleSaveGeneralSettings = async () => {
     if (!userId) return
@@ -259,7 +69,6 @@ export default function SettingsPage() {
         globalNotificationsEnabled,
         soundEnabled,
         emailEnabled,
-        aiAutoResponseEnabled,
       })
       toast.success("تم حفظ الإعدادات العامة بنجاح")
     } catch (error: any) {
@@ -269,41 +78,6 @@ export default function SettingsPage() {
     }
   }
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("يرجى اختيار صورة")
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("حجم الصورة يجب أن يكون أقل من 5 ميجابايت")
-      return
-    }
-
-    setAvatarFile(file)
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setAvatarPreview(reader.result as string)
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const getRoleBadge = (role: string) => {
-    const roleLabels: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
-      owner: { label: "مالك", variant: "default" },
-      admin: { label: "مدير", variant: "default" },
-      agent: { label: "وكيل", variant: "secondary" },
-      viewer: { label: "مشاهد", variant: "outline" },
-    }
-    const config = roleLabels[role] || { label: role, variant: "outline" as const }
-    return <Badge variant={config.variant}>{config.label}</Badge>
-  }
-
-  const canManageOrg = userRole === "owner"
-  const isOwner = userRole === "owner"
   const currentPlan = userSettings?.currentPlan || "free"
   const planLabels: Record<string, string> = {
     free: "مجاني",
@@ -311,12 +85,6 @@ export default function SettingsPage() {
     professional: "احترافي",
     enterprise: "مؤسسي",
   }
-
-  // Get permissions for each role
-  const ownerPermissions = getPermissionsForRole("owner")
-  const adminPermissions = getPermissionsForRole("admin")
-  const agentPermissions = getPermissionsForRole("agent")
-  const viewerPermissions = getPermissionsForRole("viewer")
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8" dir="rtl">
@@ -330,15 +98,8 @@ export default function SettingsPage() {
         <aside className="w-full md:w-72 shrink-0 bg-card border rounded-2xl p-2 shadow-sm">
           <TabsList className="flex flex-col h-auto w-full bg-transparent gap-1 p-0">
             <SettingsTabTrigger value="general" icon={SettingsIcon} label="الإعدادات العامة" isActive={activeTab === "general"} />
-            <SettingsTabTrigger value="profile" icon={User} label="الملف الشخصي" isActive={activeTab === "profile"} />
-            {currentOrganization && (
-              <SettingsTabTrigger value="organization" icon={Building2} label="المنظمة" isActive={activeTab === "organization"} />
-            )}
-            {isOwner && (
-              <SettingsTabTrigger value="permissions" icon={Shield} label="الصلاحيات" isActive={activeTab === "permissions"} />
-            )}
-            <SettingsTabTrigger value="integrations" icon={Link2} label="التكاملات" isActive={activeTab === "integrations"} />
-            <SettingsTabTrigger value="payment" icon={CreditCard} label="الدفع" isActive={activeTab === "payment"} />
+
+            <SettingsTabTrigger value="billing" icon={CreditCard} label="الاشتراك والفواتير" isActive={activeTab === "billing"} />
           </TabsList>
         </aside>
 
@@ -436,605 +197,90 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            {/* AI Auto Response Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5" />
-                  الرد التلقائي بالذكاء الاصطناعي
-                </CardTitle>
-                <CardDescription>
-                  تفعيل الرد التلقائي على الرسائل الواردة باستخدام الذكاء الاصطناعي
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="ai-auto-response">تفعيل الرد التلقائي</Label>
+
+          </TabsContent>
+
+
+
+
+
+          {/* Billing & Subscription Tab */}
+          <TabsContent value="billing" className="space-y-6 mt-6">
+            {/* Current Plan Card */}
+            <Card className="overflow-hidden border-primary/10 shadow-sm">
+              <div className="bg-primary/5 p-6 border-b border-primary/10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                      الخطة الحالية
+                    </h3>
                     <p className="text-sm text-muted-foreground">
-                      السماح للنظام بالرد تلقائياً على الرسائل الواردة
+                      أنت مشترك حالياً في خطة <span className="font-medium text-foreground">{planLabels[currentPlan]}</span>
                     </p>
                   </div>
-                  <Switch
-                    id="ai-auto-response"
-                    checked={aiAutoResponseEnabled}
-                    onCheckedChange={setAiAutoResponseEnabled}
-                  />
+                  <Badge variant={currentPlan === "free" ? "secondary" : "default"} className="text-sm px-3 py-1 w-fit">
+                    {currentPlan === "free" ? "نشط - مجاني" : "نشط - مدفوع"}
+                  </Badge>
                 </div>
-
-                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">الخطة الحالية</span>
-                    <Badge variant={currentPlan === "free" || currentPlan === "startup" ? "outline" : "default"}>
-                      {planLabels[currentPlan]}
-                    </Badge>
-                  </div>
-                  {(currentPlan === "free" || currentPlan === "startup") && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <p>الرد التلقائي معطل افتراضياً في هذه الخطة</p>
-                      <Link href="/settings/payment">
-                        <Button variant="link" size="sm" className="gap-1 h-auto p-0">
-                          ترقية الخطة
-                          <ArrowUpRight className="h-3 w-3" />
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
-                  {(currentPlan === "professional" || currentPlan === "enterprise") && (
-                    <p className="text-sm text-muted-foreground">
-                      الرد التلقائي مفعل افتراضياً في هذه الخطة
+              </div>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">سعر الخطة</span>
+                    <p className="text-2xl font-bold">
+                      {currentPlan === "free" ? "0 ر.س" : currentPlan === "startup" ? "99 ر.س" : "199 ر.س"}
+                      <span className="text-sm font-normal text-muted-foreground"> / شهرياً</span>
                     </p>
-                  )}
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">تاريخ التجديد</span>
+                    <p className="font-medium flex items-center gap-2">
+                      12 فبراير 2024
+                      <span className="text-xs text-muted-foreground">(يتم التجديد تلقائياً)</span>
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">طريقة الدفع</span>
+                    <p className="font-medium flex items-center gap-2">
+                      Visa ending in 4242
+                    </p>
+                  </div>
                 </div>
-
-                <Button onClick={handleSaveGeneralSettings} disabled={isSaving} className="gap-2">
-                  {isSaving ? (
-                    <>
-                      <Save className="h-4 w-4 animate-spin" />
-                      جاري الحفظ...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" />
-                      حفظ التغييرات
-                    </>
-                  )}
-                </Button>
+                <div className="mt-8 flex gap-3">
+                  <Button variant="default" className="gap-2">
+                    <ArrowUpRight className="h-4 w-4" />
+                    ترقية الخطة
+                  </Button>
+                  <Button variant="outline">إدارة طرق الدفع</Button>
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* Profile Tab */}
-          <TabsContent value="profile" className="space-y-6 mt-0">
+            {/* Invoices History */}
             <Card>
               <CardHeader>
-                <CardTitle>الملف الشخصي</CardTitle>
-                <CardDescription>معلومات الحساب الشخصية</CardDescription>
+                <CardTitle className="text-lg">سجل الفواتير</CardTitle>
+                <CardDescription>عرض وتحميل الفواتير السابقة</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Avatar */}
-                <div className="flex items-center gap-6">
-                  <Avatar className="h-20 w-20">
-                    {avatarPreview && <AvatarImage src={avatarPreview} alt={name} />}
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                      {initialsFromName(name || "المستخدم")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-2">
-                    <Label htmlFor="avatar-upload" className="cursor-pointer">
-                      <Button variant="outline" size="sm" asChild>
-                        <span>
-                          <Upload className="h-4 w-4 mr-2" />
-                          تغيير الصورة
-                        </span>
-                      </Button>
-                    </Label>
-                    <Input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarUpload}
-                      className="hidden"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      JPG, PNG أو GIF. الحد الأقصى 5 ميجابايت
-                    </p>
+              <CardContent>
+                <div className="rounded-lg border">
+                  <div className="grid grid-cols-4 p-4 bg-muted/30 text-xs font-medium text-muted-foreground border-b">
+                    <div>رقم الفاتورة</div>
+                    <div>التاريخ</div>
+                    <div>المبلغ</div>
+                    <div className="text-left">الحالة</div>
                   </div>
-                </div>
-
-                {/* Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="name">الاسم</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="أدخل اسمك"
-                  />
-                </div>
-
-                {/* Email (read-only if from WorkOS) */}
-                <div className="space-y-2">
-                  <Label htmlFor="email">البريد الإلكتروني</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={user?.email || ""}
-                    disabled
-                    className="bg-muted"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    البريد الإلكتروني مُدار من خلال WorkOS
-                  </p>
-                </div>
-
-                {/* Phone */}
-                <div className="space-y-2">
-                  <Label htmlFor="phone">رقم الهاتف</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="966501234567"
-                  />
-                </div>
-
-                <Button onClick={handleSaveProfile} disabled={isSaving} className="gap-2">
-                  {isSaving ? (
-                    <>
-                      <Save className="h-4 w-4 animate-spin" />
-                      جاري الحفظ...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" />
-                      حفظ التغييرات
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Organization Tab */}
-          {currentOrganization && (
-            <TabsContent value="organization" className="space-y-6 mt-0">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        إعدادات المنظمة
-                        {!canManageOrg && (
-                          <Lock className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </CardTitle>
-                      <CardDescription>معلومات وإعدادات المنظمة</CardDescription>
-                    </div>
-                    {getRoleBadge(userRole || "")}
-                  </div>
-                  {!canManageOrg && (
-                    <div className="mt-2 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground flex items-center gap-2">
-                      <Crown className="h-4 w-4" />
-                      فقط مالك المنظمة يمكنه تعديل هذه الإعدادات
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Organization Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="org-name">اسم المنظمة</Label>
-                    <Input
-                      id="org-name"
-                      value={orgName}
-                      onChange={(e) => setOrgName(e.target.value)}
-                      placeholder="أدخل اسم المنظمة"
-                      disabled={!canManageOrg}
-                    />
-                  </div>
-
-                  {/* Organization Email */}
-                  <div className="space-y-2">
-                    <Label htmlFor="org-email">البريد الإلكتروني</Label>
-                    <Input
-                      id="org-email"
-                      type="email"
-                      value={orgEmail}
-                      onChange={(e) => setOrgEmail(e.target.value)}
-                      placeholder="org@example.com"
-                      disabled={!canManageOrg}
-                    />
-                  </div>
-
-                  {/* Organization Phone */}
-                  <div className="space-y-2">
-                    <Label htmlFor="org-phone">رقم الهاتف</Label>
-                    <Input
-                      id="org-phone"
-                      type="tel"
-                      value={orgPhone}
-                      onChange={(e) => setOrgPhone(e.target.value)}
-                      placeholder="966501234567"
-                      disabled={!canManageOrg}
-                    />
-                  </div>
-
-                  {/* Organization Website */}
-                  <div className="space-y-2">
-                    <Label htmlFor="org-website">الموقع الإلكتروني</Label>
-                    <Input
-                      id="org-website"
-                      type="url"
-                      value={orgWebsite}
-                      onChange={(e) => setOrgWebsite(e.target.value)}
-                      placeholder="https://example.com"
-                      disabled={!canManageOrg}
-                    />
-                  </div>
-
-                  {/* Timezone */}
-                  <div className="space-y-2">
-                    <Label htmlFor="org-timezone">المنطقة الزمنية</Label>
-                    <Input
-                      id="org-timezone"
-                      value={orgTimezone}
-                      onChange={(e) => setOrgTimezone(e.target.value)}
-                      placeholder="Asia/Riyadh"
-                      disabled={!canManageOrg}
-                    />
-                  </div>
-
-                  {/* Language */}
-                  <div className="space-y-2">
-                    <Label htmlFor="org-language">اللغة</Label>
-                    <Input
-                      id="org-language"
-                      value={orgLanguage}
-                      onChange={(e) => setOrgLanguage(e.target.value)}
-                      placeholder="ar"
-                      disabled={!canManageOrg}
-                    />
-                  </div>
-
-                  {canManageOrg && (
-                    <Button onClick={handleSaveOrganization} disabled={isSaving} className="gap-2">
-                      {isSaving ? (
-                        <>
-                          <Save className="h-4 w-4 animate-spin" />
-                          جاري الحفظ...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4" />
-                          حفظ التغييرات
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Members Management (Owner only) */}
-              {isOwner && getMembers && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>أعضاء المنظمة</CardTitle>
-                    <CardDescription>إدارة أعضاء المنظمة وأدوارهم</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>الاسم</TableHead>
-                          <TableHead>البريد الإلكتروني</TableHead>
-                          <TableHead>الدور</TableHead>
-                          <TableHead>الإجراءات</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {getMembers.map((member: any) => (
-                          <TableRow key={member._id}>
-                            <TableCell>{member.name || "بدون اسم"}</TableCell>
-                            <TableCell>{member.email || "بدون بريد"}</TableCell>
-                            <TableCell>{getRoleBadge(member.role)}</TableCell>
-                            <TableCell>
-                              {member.role !== "owner" && (
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={async () => {
-                                      const newRole = prompt("اختر الدور (admin, agent, viewer):")
-                                      if (newRole && ["admin", "agent", "viewer"].includes(newRole)) {
-                                        try {
-                                          await updateMemberRole({
-                                            userId: userId!,
-                                            organizationId: currentOrganization._id,
-                                            memberUserId: member._id,
-                                            role: newRole as any,
-                                          })
-                                          toast.success("تم تحديث الدور")
-                                        } catch (error: any) {
-                                          toast.error(error?.message || "فشل تحديث الدور")
-                                        }
-                                      }
-                                    }}
-                                  >
-                                    تعديل
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive"
-                                    onClick={async () => {
-                                      if (confirm("هل أنت متأكد من إزالة هذا العضو؟")) {
-                                        try {
-                                          await removeMember({
-                                            userId: userId!,
-                                            organizationId: currentOrganization._id,
-                                            memberUserId: member._id,
-                                          })
-                                          toast.success("تم إزالة العضو")
-                                        } catch (error: any) {
-                                          toast.error(error?.message || "فشل إزالة العضو")
-                                        }
-                                      }
-                                    }}
-                                  >
-                                    إزالة
-                                  </Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-          )}
-
-          {/* Permissions Tab - Owner Only */}
-          {isOwner && (
-            <TabsContent value="permissions" className="space-y-6 mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    مصفوفة الصلاحيات
-                  </CardTitle>
-                  <CardDescription>
-                    نظرة عامة على الصلاحيات المتاحة لكل دور في المنظمة
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>الصلاحية</TableHead>
-                          <TableHead className="text-center">مالك</TableHead>
-                          <TableHead className="text-center">مدير</TableHead>
-                          <TableHead className="text-center">وكيل</TableHead>
-                          <TableHead className="text-center">مشاهد</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {allPermissions.map((permission) => (
-                          <TableRow key={permission}>
-                            <TableCell className="font-medium">
-                              {permissionLabels[permission] || permission}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {ownerPermissions.includes(permission) ? (
-                                <CheckCircle2 className="h-5 w-5 text-success mx-auto" />
-                              ) : (
-                                <XCircle className="h-5 w-5 text-muted-foreground mx-auto" />
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {adminPermissions.includes(permission) ? (
-                                <CheckCircle2 className="h-5 w-5 text-success mx-auto" />
-                              ) : (
-                                <XCircle className="h-5 w-5 text-muted-foreground mx-auto" />
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {agentPermissions.includes(permission) ? (
-                                <CheckCircle2 className="h-5 w-5 text-success mx-auto" />
-                              ) : (
-                                <XCircle className="h-5 w-5 text-muted-foreground mx-auto" />
-                              )}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {viewerPermissions.includes(permission) ? (
-                                <CheckCircle2 className="h-5 w-5 text-success mx-auto" />
-                              ) : (
-                                <XCircle className="h-5 w-5 text-muted-foreground mx-auto" />
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>ملاحظة:</strong> الصلاحيات محددة في النظام ولا يمكن تعديلها من خلال الواجهة.
-                      للتحكم في الوصول، قم بتغيير أدوار المستخدمين في قسم "المنظمة".
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
-
-          {/* Integrations Tab */}
-          <TabsContent value="integrations" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Salla Connection Card */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#004D3D] flex items-center justify-center">
-                        <ShoppingBag className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">سلة</CardTitle>
-                        <CardDescription>Salla E-commerce Platform</CardDescription>
+                  {[1, 2, 3].map((invoice) => (
+                    <div key={invoice} className="grid grid-cols-4 p-4 border-b last:border-0 text-sm hover:bg-muted/20 transition-colors cursor-pointer items-center">
+                      <div className="font-mono text-xs">INV-2024-00{invoice}</div>
+                      <div>12 يناير, 2024</div>
+                      <div>99.00 ر.س</div>
+                      <div className="flex justify-end">
+                        <Badge variant="outline" className="bg-success/5 text-success border-success/20">مدفوع</Badge>
                       </div>
                     </div>
-                    {isSallaConnected ? (
-                      <Badge className="bg-success text-success-foreground gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> متصل
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="gap-1">
-                        <XCircle className="h-3 w-3" /> غير متصل
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {isSallaConnected && sallaConnection ? (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">اسم المتجر</span>
-                        <span className="font-medium">{sallaConnection.storeName || "غير محدد"}</span>
-                      </div>
-                      {sallaConnection.storeUrl && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">رابط المتجر</span>
-                          <a href={sallaConnection.storeUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            {sallaConnection.storeUrl}
-                          </a>
-                        </div>
-                      )}
-                      {sallaConnection.connectedAt && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">تاريخ الاتصال</span>
-                          <span>{new Date(sallaConnection.connectedAt).toLocaleDateString('ar-SA')}</span>
-                        </div>
-                      )}
-                      {sallaConnection.isExpired && (
-                        <div className="p-2 bg-warning/10 text-warning rounded-lg text-xs">
-                          انتهت صلاحية الاتصال. يرجى إعادة الاتصال.
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      اربط حساب سلة لمزامنة المنتجات والطلبات.
-                    </p>
-                  )}
-                  <Button
-                    variant={isSallaConnected ? "outline" : "default"}
-                    className="w-full"
-                    onClick={() => window.location.href = "/integrations"}
-                  >
-                    {isSallaConnected ? "إدارة الاتصال" : "ربط سلة"}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* WhatsApp/Meta Connection Card */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#128C7E] flex items-center justify-center">
-                        <MessageSquare className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">WhatsApp</CardTitle>
-                        <CardDescription>Meta Business API</CardDescription>
-                      </div>
-                    </div>
-                    {isMetaConnected ? (
-                      <Badge className="bg-success text-success-foreground gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> متصل
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="gap-1">
-                        <XCircle className="h-3 w-3" /> غير متصل
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {isMetaConnected && metaConnection ? (
-                    <div className="space-y-2 text-sm">
-                      {metaConnection.phoneNumberId && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Phone Number ID</span>
-                          <span className="font-mono text-xs">{metaConnection.phoneNumberId}</span>
-                        </div>
-                      )}
-                      {metaConnection.wabaId && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">WABA ID</span>
-                          <span className="font-mono text-xs">{metaConnection.wabaId}</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      اربط حساب Meta Business لإرسال واستقبال الرسائل عبر WhatsApp.
-                    </p>
-                  )}
-                  <Button
-                    variant={isMetaConnected ? "outline" : "default"}
-                    className="w-full"
-                    onClick={() => window.location.href = "/integrations"}
-                  >
-                    {isMetaConnected ? "إدارة الاتصال" : "ربط WhatsApp"}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Payment Tab */}
-          <TabsContent value="payment" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  الاشتراك والدفع
-                </CardTitle>
-                <CardDescription>إدارة خطتك وطرق الدفع</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="p-4 bg-muted/50 rounded-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">الخطة الحالية</span>
-                    <Badge variant={currentPlan === "free" || currentPlan === "startup" ? "outline" : "default"}>
-                      {planLabels[currentPlan]}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">حالة الاشتراك</span>
-                    <Badge variant="default">نشط</Badge>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <p className="text-sm text-muted-foreground text-center">
-                    صفحة إدارة الدفع قيد التطوير. سيتم إضافة إدارة طرق الدفع وتاريخ الفواتير قريباً.
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1">
-                    عرض الفواتير
-                  </Button>
-                  <Button variant="outline" className="flex-1">
-                    تغيير الخطة
-                  </Button>
+                  ))}
                 </div>
               </CardContent>
             </Card>

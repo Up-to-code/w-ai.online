@@ -17,10 +17,6 @@ export default function CustomersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
 
-  // Permissions
-  const role = useQuery(api.permissions.getCurrentUserRole, userId ? { userId } : "skip")
-  // Removed unused canManage variable
-
   // 1. Paginated Query (Default View)
   const {
     results: paginatedContacts,
@@ -39,6 +35,7 @@ export default function CustomersPage() {
     api.contacts.list,
     isFiltering ? { limit: 1000 } : "skip"
   )
+  const isFilteringTruncated = isFiltering && allContacts?.length === 1000
 
   const chats = useUserQuery(api.chat.listChats, {})
 
@@ -126,7 +123,7 @@ export default function CustomersPage() {
               <CardTitle className="text-xl font-black">قائمة العملاء</CardTitle>
               <CardDescription className="font-bold uppercase tracking-widest text-[10px]">
                 {isFiltering
-                  ? `النتائج: ${displayContacts.length}`
+                  ? `النتائج: ${displayContacts.length}${isFilteringTruncated ? " (محدود بـ 1000)" : ""}`
                   : `إجمالي العملاء: ${displayContacts.length}${status === "CanLoadMore" ? "+" : ""}`
                 }
               </CardDescription>
@@ -135,6 +132,11 @@ export default function CustomersPage() {
           <div className="pt-2 border-t border-border/30">
             <TagFilter tags={uniqueTags} selected={selectedTag} onSelect={setSelectedTag} />
           </div>
+          {isFilteringTruncated && (
+            <div className="mt-2 text-warning text-xs font-medium bg-warning/10 p-2 rounded-md">
+              تنبيه: يتم عرض أول 1000 عميل فقط. يرجى تضييق نطاق البحث للحصول على نتائج أدق.
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-8 pt-0">
           {isLoading ? (

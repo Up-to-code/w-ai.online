@@ -472,6 +472,16 @@ export default defineSchema({
     .index("by_org_status", ["organizationId", "status"])
     .index("by_contact", ["contactId"]),
 
+  // Global Tool Registry (AI & UI Metadata)
+  tools: defineTable({
+    name: v.string(),
+    slug: v.string(), // e.g. "campaigns", "chat"
+    description: v.string(),
+    aiPrompt: v.string(), // Instructions for the AI on how to use/navigate this tool
+    path: v.string(), // UI Path
+    icon: v.optional(v.string()), // Lucide icon name
+  }).index("by_slug", ["slug"]),
+
   // Organization Tools - Activated features per org
   organizationTools: defineTable({
     organizationId: v.id("organizations"),
