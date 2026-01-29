@@ -232,3 +232,35 @@ export const deleteContact = mutation({
         await ctx.db.delete(args.id);
     },
 });
+
+// Search contacts - for agent tools (organization-scoped)
+export const search = query({
+    args: {
+        organizationId: v.string(),
+        query: v.string(),
+        limit: v.optional(v.number())
+    },
+    handler: async (ctx, args) => {
+        const orgId = args.organizationId as any;
+        const searchQuery = args.query.toLowerCase();
+
+        // Get all contacts for organization and filter
+        const contacts = await ctx.db
+            .query("contacts")
+            .withIndex("by_org_phone", (q) => q.eq("organizationId", orgId))
+            .take(100); // Limit scan
+
+        // Filter by name or phone
+        const filtered = contacts.filter(c =>
+            c.name?.toLowerCase().includes(searchQuery) ||
+            c.phone?.includes(args.query)
+        ).slice(0, args.limit || 5);
+
+        return filtered.map(c => ({
+            name: c.name,
+            phone: c.phone,
+            email: c.email,
+            tags: c.tags
+        }));
+    },
+});
