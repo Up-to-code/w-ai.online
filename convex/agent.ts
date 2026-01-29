@@ -1,51 +1,338 @@
-import { action, internalAction, internalMutation } from "./_generated/server";
+// Unified AI Agent with ReAct Loop, Tool Calling, Credits, and Multi-Language
+import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
+import { internal, api } from "./_generated/api";
+import { TOOL_REGISTRY, getOpenRouterTools, executeTool, ToolContext } from "./tool_registry";
+import { calculateCost, estimateTokens } from "./pricing";
+import { toToon } from "./toon_utils";
+import { generateContextPrompt } from "./tool_definitions";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MAX_REACT_ITERATIONS = 3;
 
-// --- Tools ---
+// ============ LANGUAGE DETECTION ============
 
-async function searchProducts(ctx: any, userId: string, query: string) {
-    // Simple fuzzy search using Convex filter if possible, or fetch all and filter
-    // For production, Vector Search is better. Here we use basic filter.
-    // Note: We can't access DB directly in action, so we call a query.
-    const products = await ctx.runQuery(api.products.list, {
-        userId: userId as any, // Multi-tenant: pass userId
-        search: query
-    });
-    return JSON.stringify(products.slice(0, 5)); // Limit to top 5
+interface DetectedLanguage {
+    code: string;
+    name: string;
 }
 
-// --- Agent Logic ---
+function detectLanguage(message: string): DetectedLanguage {
+    const patterns: Array<{ code: string; name: string; pattern: RegExp }> = [
+        { code: "ar", name: "Arabic", pattern: /[\u0600-\u06FF]/ },
+        { code: "fr", name: "French", pattern: /[àâäéèêëïîôùûüÿçœæ]/i },
+        { code: "es", name: "Spanish", pattern: /[áéíóúñ¿¡]/i },
+        { code: "de", name: "German", pattern: /[äöüß]/i },
+        { code: "tr", name: "Turkish", pattern: /[çğıöşüİĞŞ]/ },
+        { code: "pt", name: "Portuguese", pattern: /[ãõáéíóúâêô]/i },
+    ];
+
+    for (const lang of patterns) {
+        if (lang.pattern.test(message)) {
+            return { code: lang.code, name: lang.name };
+        }
+    }
+
+    return { code: "en", name: "English" };
+}
+
+// ============ SYSTEM PROMPT BUILDER ============
+
+function buildSystemPrompt(
+    config: any,
+    chat: any,
+    detectedLang: DetectedLanguage
+): string {
+    // Base prompt from config or default
+    let prompt = config?.systemPrompt ||
+        "You are a helpful AI sales assistant. You help customers find products, answer questions, and book appointments. Be concise and helpful.";
+
+    // Language rules from config (user editable from dashboard)
+    const defaultLanguageRules = `
+# Language Rules
+- Respond in the user's language (detected: ${detectedLang.name})
+- Keep responses concise and helpful
+- Use appropriate cultural greetings
+`;
+    const languageRules = config?.languageRules || defaultLanguageRules;
+    prompt += "\n\n" + languageRules;
+
+    // Context-aware formatting (channel, customer info)
+    if (chat) {
+        const contextPrompt = generateContextPrompt({
+            customerName: chat.contactName || "Customer",
+            tags: chat.tags || [],
+            channel: "whatsapp"
+        });
+        prompt += contextPrompt;
+    }
+
+    // Tool instructions
+    if (TOOL_REGISTRY.length > 0) {
+        prompt += `\n\n# Available Tools
+You have access to the following tools. Use them when the user's request requires them:
+${TOOL_REGISTRY.map(t => `- **${t.name}** (${t.slug}): ${t.description}`).join("\n")}
+
+When you need information or to take action, use the appropriate tool.
+Only use tools when clearly needed - don't over-use them for simple greetings.
+`;
+    }
+
+    return prompt;
+}
+
+// ============ MAIN AGENT ============
+
+export const generateResponse = internalAction({
+    args: {
+        organizationId: v.id("organizations"),
+        chatId: v.id("chats"),
+        contactPhone: v.string(),
+        userMessage: v.string(),
+    },
+    handler: async (ctx, args) => {
+        console.log(`[Agent] Starting for chat ${args.chatId}`);
+
+        // 1. Verify chat and get details
+        const chat = await ctx.runQuery(internal.chat.get, { id: args.chatId });
+        if (!chat || chat.organizationId !== args.organizationId) {
+            throw new Error("Chat not found or access denied");
+        }
+
+        const apiKey = process.env.OPENROUTER_KEY;
+        if (!apiKey) {
+            console.error("[Agent] Missing OPENROUTER_KEY");
+            return "⚠️ AI service not configured.";
+        }
+
+        // 2. Check credits balance
+        let hasCredits = true;
+        try {
+            const balance = await ctx.runQuery(internal.credits.getBalanceInternal, {
+                organizationId: args.organizationId
+            });
+            if (balance <= 0) {
+                hasCredits = false;
+                console.log("[Agent] Insufficient credits, but will try with free model");
+            }
+        } catch (e) {
+            // Credits table might not exist yet - continue anyway
+            console.log("[Agent] Credits check skipped");
+        }
+
+        // 3. Get AI Config
+        const config = await ctx.runQuery(api.ai_config.getInternalConfig, {
+            organizationId: args.organizationId
+        });
+
+        // Use free model if no credits
+        let model = config?.model || "google/gemini-2.0-flash-lite-preview-02-05:free";
+        if (!hasCredits && !model.includes(":free")) {
+            model = "google/gemini-2.0-flash-lite-preview-02-05:free";
+            console.log("[Agent] Switched to free model due to no credits");
+        }
+
+        // 4. Detect language
+        const detectedLang = detectLanguage(args.userMessage);
+        console.log(`[Agent] Language detected: ${detectedLang.name}`);
+
+        // 5. Build system prompt
+        const systemPrompt = buildSystemPrompt(config, chat, detectedLang);
+
+        // 6. Get chat history (last 5 messages for efficiency)
+        const userId = chat.userId;
+        const history = await ctx.runQuery(api.messages.list, {
+            userId,
+            chatId: args.chatId
+        });
+
+        const recentHistory = history.slice(0, 5).reverse().map((msg: any) => ({
+            role: msg.direction === "inbound" ? "user" : "assistant",
+            content: msg.content || (msg.type === "image" ? "[Image sent]" : "")
+        }));
+
+        // Add conversation summary if available
+        let summaryContext = "";
+        if (chat?.aiSummary) {
+            summaryContext = `\n\n[Previous conversation summary: ${chat.aiSummary}]`;
+        }
+
+        // 7. Prepare messages for LLM
+        const messages: any[] = [
+            { role: "system", content: systemPrompt + summaryContext },
+            ...recentHistory,
+            { role: "user", content: args.userMessage }
+        ];
+
+        // 8. Tool context for execution
+        const toolContext: ToolContext = {
+            organizationId: args.organizationId as string,
+            chatId: args.chatId as string,
+            contactName: chat.contactName || undefined,
+            contactPhone: args.contactPhone,
+            userId: userId as string || undefined
+        };
+
+        // 9. ReAct Loop - Think → Act → Observe
+        let finalResponse = "";
+        let totalInputTokens = 0;
+        let totalOutputTokens = 0;
+
+        for (let iteration = 0; iteration < MAX_REACT_ITERATIONS; iteration++) {
+            console.log(`[Agent] ReAct iteration ${iteration + 1}/${MAX_REACT_ITERATIONS}`);
+
+            try {
+                const response = await fetch(OPENROUTER_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://w-ai.online",
+                        "X-Title": "W-AI Agent"
+                    },
+                    body: JSON.stringify({
+                        model,
+                        messages,
+                        tools: getOpenRouterTools(),
+                        tool_choice: "auto"
+                    })
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    console.error("[Agent] OpenRouter error:", errText);
+                    finalResponse = "⚠️ I encountered an error. Please try again.";
+                    break;
+                }
+
+                const data = await response.json();
+
+                // Track token usage
+                totalInputTokens += data.usage?.prompt_tokens || estimateTokens(JSON.stringify(messages));
+                totalOutputTokens += data.usage?.completion_tokens || 0;
+
+                const message = data.choices?.[0]?.message;
+
+                if (!message) {
+                    finalResponse = "⚠️ No response received.";
+                    break;
+                }
+
+                // Check if LLM wants to call a tool
+                if (message.tool_calls && message.tool_calls.length > 0) {
+                    const toolCall = message.tool_calls[0];
+                    const toolName = toolCall.function.name;
+                    let toolArgs: Record<string, any> = {};
+
+                    try {
+                        toolArgs = JSON.parse(toolCall.function.arguments || "{}");
+                    } catch {
+                        console.warn("[Agent] Failed to parse tool args:", toolCall.function.arguments);
+                    }
+
+                    console.log(`[Agent] Tool call: ${toolName}`, toolArgs);
+
+                    // Execute the tool
+                    const observation = await executeTool(ctx, toolName, toolArgs, toolContext);
+
+                    // Use TOON format for compact observation if large
+                    const formattedObservation = observation.length > 500
+                        ? toToon({ result: observation })
+                        : observation;
+
+                    // Add tool call and result to conversation
+                    messages.push({
+                        role: "assistant",
+                        content: null,
+                        tool_calls: message.tool_calls
+                    });
+                    messages.push({
+                        role: "tool",
+                        tool_call_id: toolCall.id,
+                        content: formattedObservation
+                    });
+
+                    // Continue loop - LLM will process the observation
+                } else {
+                    // LLM is ready to respond (no tool call)
+                    finalResponse = message.content || "I couldn't generate a response.";
+                    break;
+                }
+            } catch (error: any) {
+                console.error("[Agent] Error in ReAct loop:", error);
+                finalResponse = "⚠️ An error occurred while processing your request.";
+                break;
+            }
+        }
+
+        // If max iterations reached without response
+        if (!finalResponse) {
+            finalResponse = "I'm having trouble processing this request. Please try again.";
+        }
+
+        // 10. Calculate and deduct credits
+        const { priceCents } = calculateCost(model, totalInputTokens, totalOutputTokens);
+
+        if (priceCents > 0) {
+            try {
+                await ctx.runMutation(internal.credits.deductUsage, {
+                    organizationId: args.organizationId,
+                    amount: priceCents,
+                    model,
+                    tokensInput: totalInputTokens,
+                    tokensOutput: totalOutputTokens,
+                    description: `Chat response (${totalInputTokens + totalOutputTokens} tokens)`
+                });
+            } catch (e) {
+                console.log("[Agent] Credit deduction skipped - table may not exist");
+            }
+        }
+
+        console.log(`[Agent] Complete. Tokens: ${totalInputTokens}+${totalOutputTokens}, Cost: $${(priceCents / 100).toFixed(4)}`);
+
+        return finalResponse;
+    }
+});
+
+// ============ TEST ENDPOINT ============
 
 export const testResponse = internalAction({
     args: {
         message: v.string(),
         systemPrompt: v.string(),
         model: v.string(),
+        languageRules: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const apiKey = process.env.OPENROUTER_KEY;
         if (!apiKey) throw new Error("Missing OPENROUTER_KEY");
 
+        const detectedLang = detectLanguage(args.message);
+
+        let fullPrompt = args.systemPrompt;
+        if (args.languageRules) {
+            fullPrompt += "\n\n" + args.languageRules;
+        }
+
         const messages = [
-            { role: "system", content: args.systemPrompt },
+            { role: "system", content: fullPrompt },
             { role: "user", content: args.message }
         ];
 
         try {
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            const response = await fetch(OPENROUTER_API_URL, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${apiKey}`,
                     "Content-Type": "application/json",
-                    "HTTP-Referer": "https://w-ai.com",
-                    "X-Title": "W-AI Agent Test",
+                    "HTTP-Referer": "https://w-ai.online",
+                    "X-Title": "W-AI Agent Test"
                 },
                 body: JSON.stringify({
                     model: args.model,
-                    messages: messages,
+                    messages,
+                    tools: getOpenRouterTools(),
+                    tool_choice: "auto"
                 })
             });
 
@@ -55,949 +342,17 @@ export const testResponse = internalAction({
             }
 
             const data = await response.json();
-            return data.choices?.[0]?.message?.content || "No response generated.";
+            const message = data.choices?.[0]?.message;
+
+            if (message?.tool_calls) {
+                const toolCall = message.tool_calls[0];
+                return `🔧 Would call tool: ${toolCall.function.name}\nArgs: ${toolCall.function.arguments}`;
+            }
+
+            return message?.content || "No response generated.";
         } catch (error: any) {
-            console.error("Test Agent Failed:", error);
+            console.error("[Agent Test] Failed:", error);
             throw new Error(error.message);
-        }
-    }
-});
-
-export const generateResponse = internalAction({
-    args: {
-        organizationId: v.id("organizations"), // Organization-scoped
-        chatId: v.id("chats"),
-        contactPhone: v.string(),
-        userMessage: v.string(),
-    },
-    handler: async (ctx, args) => {
-        // Verify chat belongs to organization
-        const chat = await ctx.runQuery(internal.chat.getChatById, {
-            organizationId: args.organizationId,
-            chatId: args.chatId,
-        });
-        if (!chat || chat.organizationId !== args.organizationId) {
-            throw new Error("Chat not found or access denied");
-        }
-        const apiKey = process.env.OPENROUTER_KEY;
-        if (!apiKey) {
-            console.error("[Agent] Missing OPENROUTER_KEY");
-            return;
-        }
-        const cleanText = (t: string) =>
-            t
-                .replace(/https?:\/\/\S+\.(png|jpe?g|webp|gif)(\?\S*)?/gi, "")
-                .replace(/ImageURL:\s*\S+/gi, "")
-                .replace(/\n{3,}/g, "\n\n")
-                .trim();
-
-        // Conversation context manager
-        interface ConversationContext {
-            searchHistory: Array<{
-                query: string;
-                intent: string;
-                results: number;
-                timestamp: number;
-            }>;
-            userPreferences: {
-                preferredCategories?: string[];
-                priceRange?: { min?: number; max?: number };
-                language?: 'ar' | 'en';
-                priceSensitive?: boolean;
-            };
-            lastSuccessfulSearch?: string;
-        }
-
-        const conversationContext: Record<string, ConversationContext> = {};
-
-        function updateConversationContext(userId: string, searchData: { query: string; intent: string; results: number }) {
-            if (!conversationContext[userId]) {
-                conversationContext[userId] = {
-                    searchHistory: [],
-                    userPreferences: {}
-                };
-            }
-
-            conversationContext[userId].searchHistory.push({
-                query: searchData.query,
-                intent: searchData.intent,
-                results: searchData.results,
-                timestamp: Date.now()
-            });
-
-            // Keep only recent searches (last 10)
-            conversationContext[userId].searchHistory = conversationContext[userId].searchHistory.slice(-10);
-
-            // Update last successful search if results found
-            if (searchData.results > 0) {
-                conversationContext[userId].lastSuccessfulSearch = searchData.query;
-            }
-
-            // Detect patterns in user behavior
-            const recentSearches = conversationContext[userId].searchHistory.slice(-5);
-            const priceInquiries = recentSearches.filter(s => s.intent === 'price_inquiry').length;
-            const categorySearches = recentSearches.filter(s => s.intent === 'category_search').length;
-
-            if (priceInquiries >= 3) {
-                conversationContext[userId].userPreferences.priceSensitive = true;
-            }
-
-            if (categorySearches >= 2) {
-                // Extract categories from recent searches (simplified)
-                conversationContext[userId].userPreferences.preferredCategories = ['electronics', 'clothing']; // This would be extracted from actual queries
-            }
-        }
-
-        function getContextualResponse(userId: string, intentResult: any, productCount: number): string {
-            const context = conversationContext[userId];
-            if (!context) return '';
-
-            const recentSearches = context.searchHistory.slice(-3);
-            const suggestions = [];
-
-            // Provide contextual suggestions based on user behavior
-            if (context.userPreferences.priceSensitive && intentResult.queryType !== 'price_inquiry') {
-                suggestions.push("💡 I notice you've been asking about prices. Would you like to see our current promotions or budget-friendly options?");
-            }
-
-            if (productCount === 0 && context.lastSuccessfulSearch) {
-                suggestions.push(`💡 I couldn't find what you're looking for. You might be interested in similar products to "${context.lastSuccessfulSearch}".`);
-            }
-
-            if (recentSearches.length >= 2 && recentSearches.every(s => s.results === 0)) {
-                suggestions.push("💡 I see you're having trouble finding products. Try being more specific with product names, brands, or categories.");
-            }
-
-            // Language preference detection
-            const arabicQueries = recentSearches.filter(s => /[\u0600-\u06FF]/.test(s.query)).length;
-            if (arabicQueries >= 2) {
-                context.userPreferences.language = 'ar';
-            } else if (recentSearches.length >= 2 && arabicQueries === 0) {
-                context.userPreferences.language = 'en';
-            }
-
-            return suggestions.length > 0 ? `\n\n${suggestions.join('\n')}` : '';
-        }
-        let selectedProduct: {
-            name: string;
-            price: string;
-            imageUrl: string;
-            productUrl: string;
-            description: string;
-        } | null = null;
-
-        // 1. Get AI Config & Chat Details
-        const config = await ctx.runQuery(api.ai_config.getInternalConfig, {
-            organizationId: args.organizationId
-        });
-        // Chat already retrieved above, reuse it
-        const model = config?.model || process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-lite-preview-02-05:free";
-        let systemPrompt = config?.systemPrompt || "You are a helpful sales assistant.";
-
-        // Inject Tool Instructions from Registry
-        const allTools = await ctx.runQuery(internal.tools.list, {});
-        if (allTools && allTools.length > 0) {
-            systemPrompt += "\n\n# System Capabilities & Tool Instructions:\n";
-            allTools.forEach((tool: any) => {
-                systemPrompt += `- **${tool.name}** (${tool.path}): ${tool.aiPrompt}\n`;
-            });
-        }
-
-        // 2. Get Chat History (Optimized)
-        // Get userId from chat for backward compatibility with messages.list
-        const userId = chat.userId;
-        const history = await ctx.runQuery(api.messages.list, {
-            userId: userId, // Keep for backward compatibility
-            chatId: args.chatId
-        });
-
-        // Take only last 5 messages + Summary
-        const recentHistory = history.slice(0, 5).reverse().map((msg: any) => ({
-            role: msg.direction === "inbound" ? "user" : "assistant",
-            content: msg.content || (msg.type === "image" ? "[Image]" : "")
-        }));
-
-        // Inject Summary if available
-        let summaryContext = "";
-        if (chat?.aiSummary) {
-            summaryContext = `\n\nPREVIOUS CONVERSATION SUMMARY:\n${chat.aiSummary}\n\n(Use this summary to understand context, but prioritize recent messages.)`;
-        }
-
-        // 3. Prepare Messages for LLM
-        const messages = [
-            { role: "system", content: systemPrompt + summaryContext },
-            ...recentHistory,
-            { role: "user", content: args.userMessage }
-        ];
-
-        console.log(`[Agent] Calling ${model} with ${messages.length} messages (Summary: ${!!chat?.aiSummary})`);
-
-        // 4. Enhanced Intent Detection & Tool Use
-        // Advanced NLP-based query intent recognition with context-aware detection
-
-        const detectSearchIntent = (message: string): { shouldSearch: boolean; queryType: string; extractedParams: any } => {
-            const lowerMessage = message.toLowerCase().trim();
-
-            // Comprehensive search intent patterns with confidence scoring
-            const intentPatterns = [
-                // Product availability queries (high confidence)
-                { pattern: /\b(do you have|do u have|have you got|got any)\b.*?(product|item|thing)?\s*(?:number|#)?\s*([a-z0-9\-]+)?/i, type: 'availability', confidence: 0.9 },
-                // Price-related queries (high confidence) - Added "for" support and improved spacing
-                { pattern: /(?:^|\s|\b)(how much|what.*price|price of|cost of|بكم|بكام|كم سعر|شقد|قيمة)(?:\b|\s|$)\s*(?:is|the|for|of)?\s*(.+?)(?:\?|؟|$)/i, type: 'price_inquiry', confidence: 0.9 },
-                // Product search with identifiers (high confidence)
-                { pattern: /\b(product|item|thing).*?(?:number|#|code)\s*[:\-]?\s*([a-z0-9\-]+)/i, type: 'product_number', confidence: 0.95 },
-                // General search patterns (medium confidence) - Renamed to product_search
-                { pattern: /\b(search|find|look for|show me|get me|i want|i need|looking for|want to see)\b\s*(?:a|the|some|for)?\s*(.+?)(?:\?|$)/i, type: 'product_search', confidence: 0.7 },
-                // Category searches (medium confidence) - Improved regex
-                { pattern: /\b(what.*category|category of|type of|kind of)\b\s*(?:is|are)?\s*(.+?)(?:\?|$)/i, type: 'category_search', confidence: 0.6 },
-                // Comparison queries (medium confidence)
-                { pattern: /\b(compare|difference|vs|versus|أو|between|among)\b\s*(?:the|between|in)?\s*(.+?)(?:\?|$)/i, type: 'comparison', confidence: 0.65 },
-                // Arabic search patterns (high confidence) - Fixed boundaries for Arabic
-                { pattern: /(?:^|\s)(ابحث عن|وريني|جيب لي|عرض|عندك|فيها|توجد)(?:\s+|$).*?(?:منتج|سلعة|شيء|ال)?\s*(.+?)(?:\?|$)/i, type: 'product_search', confidence: 0.8 },
-                // Reference to previous search (high confidence to override general/availability)
-                { pattern: /\b(like that|similar|same as|another one|the other one)\b/i, type: 'reference_search', confidence: 0.95 }
-            ];
-
-            // Product identifier patterns (SKUs, model numbers, etc.)
-            const identifierPatterns = [
-                /\b[a-z]{2,}-\d{3,}\b/i,  // ABC-123 format (case insensitive)
-                /\b\d{4,}\b/,            // 4+ digit numbers
-                /\b(?=[a-z0-9]*\d)[a-z0-9]{6,}\b/i,      // Mixed alphanumeric 6+ chars (must have digit inside)
-                /\b(?:model|sku|code|ref)[:\-]?\s*([a-z0-9\-]+)/i
-            ];
-
-            let bestMatch = null;
-            let maxConfidence = 0.5; // Minimum threshold
-            let extractedParams: any = {};
-
-            // Check each intent pattern
-            for (const intent of intentPatterns) {
-                const match = lowerMessage.match(intent.pattern);
-                if (match && intent.confidence > maxConfidence) {
-                    bestMatch = intent.type;
-                    maxConfidence = intent.confidence;
-
-                    // Extract parameters based on pattern type
-                    if (intent.type === 'product_number' && match[2]) {
-                        extractedParams.productNumber = match[2].toUpperCase();
-                    } else if (intent.type === 'price_inquiry' && match[match.length - 1]) {
-                        extractedParams.productName = match[match.length - 1].trim();
-                    } else if ((intent.type === 'product_search' || intent.type === 'availability') && match[match.length - 1]) {
-                        extractedParams.searchQuery = match[match.length - 1].trim();
-                    } else if (intent.type === 'category_search' && match[match.length - 1]) {
-                        extractedParams.category = match[match.length - 1].trim();
-                        extractedParams.searchQuery = extractedParams.category;
-                    } else if (intent.type === 'comparison' && match[match.length - 1]) {
-                        extractedParams.searchQuery = match[match.length - 1].trim();
-                    }
-                }
-            }
-
-            // Look for product identifiers if not already found
-            if (!extractedParams.productNumber) {
-                for (const pattern of identifierPatterns) {
-                    const match = lowerMessage.match(pattern);
-                    if (match) {
-                        const id = match[1] || match[0];
-                        extractedParams.productNumber = id.toUpperCase().replace(/[^A-Z0-9\-]/g, '');
-                        // Force product_number type if explicit identifier found
-                        if (!bestMatch || bestMatch === 'product_search' || bestMatch === 'price_inquiry' || bestMatch === 'availability') {
-                            bestMatch = 'product_number';
-                            maxConfidence = 0.95;
-                        }
-                        break;
-                    }
-                }
-            }
-
-            // Context-aware enhancement: Check if this is a follow-up question
-            const isFollowUp = recentHistory.some((msg: { role: string; content: string }) =>
-                msg.role === 'assistant' &&
-                (msg.content.includes('product') || msg.content.includes('found') || msg.content.includes('search'))
-            );
-
-            if (isFollowUp && maxConfidence < 0.7) {
-                maxConfidence = Math.min(maxConfidence + 0.2, 0.8); // Boost confidence for follow-ups
-            }
-
-            return {
-                shouldSearch: maxConfidence >= 0.6,
-                queryType: bestMatch || 'product_search',
-                extractedParams
-            };
-        };
-
-        const intentResult = detectSearchIntent(args.userMessage);
-        const shouldSearch = intentResult.shouldSearch;
-
-        if (shouldSearch) {
-            // Smart query cleaning based on detected intent and extracted parameters
-            let cleanQuery = args.userMessage;
-
-            // Use extracted parameters to build targeted search query
-            if (intentResult.extractedParams.productNumber) {
-                // Priority search by product number/SKU
-                cleanQuery = intentResult.extractedParams.productNumber;
-                console.log(`[Agent] Product number detected: "${cleanQuery}"`);
-            } else if (intentResult.extractedParams.productName) {
-                // Search by extracted product name from price inquiry
-                cleanQuery = intentResult.extractedParams.productName;
-                console.log(`[Agent] Product name from price inquiry: "${cleanQuery}"`);
-            } else if (intentResult.extractedParams.searchQuery) {
-                // Use extracted search query
-                cleanQuery = intentResult.extractedParams.searchQuery;
-                console.log(`[Agent] Extracted search query: "${cleanQuery}"`);
-            } else if (intentResult.extractedParams.category) {
-                // Search by category
-                cleanQuery = intentResult.extractedParams.category;
-                console.log(`[Agent] Category search: "${cleanQuery}"`);
-            } else {
-                // Fallback: intelligent cleaning based on query type
-                const cleaningPatterns = {
-                    'price_inquiry': /(how much|what.*price|price of|cost of|بكم|بكام|كم سعر|شقد|قيمة|is|the|does it|cost|for|of)/gi,
-                    'availability': /(do you have|do u have|have you got|got any|is there|are there|available|in stock|left|still|موجود|متوفر|عندك)/gi,
-                    'product_search': /(search|find|look for|show me|get me|i want|i need|looking for|want to see|ابحث عن|وريني|جيب لي|عرض|عندك|فيها|توجد|بدي|عايز|أبي|أريد)/gi,
-                    'comparison': /(compare|difference|vs|versus|أو|between|among)/gi
-                };
-
-                // Apply type-specific cleaning
-                if (intentResult.queryType && cleaningPatterns[intentResult.queryType as keyof typeof cleaningPatterns]) {
-                    cleanQuery = cleanQuery.replace(cleaningPatterns[intentResult.queryType as keyof typeof cleaningPatterns], '');
-                }
-
-                // General cleaning for conversational phrases and question marks
-                cleanQuery = cleanQuery
-                    .replace(/(لو سمحت|ممكن|ابغى|اريد|بدي|فرجيني|شوف)/gi, '')
-                    .replace(/[؟?]/g, '')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-            }
-
-            // Final cleanup and validation
-            cleanQuery = cleanQuery.replace(/^\s+|\s+$/g, '').replace(/\s{2,}/g, ' ');
-
-            // If query becomes too short or generic, enhance with context
-            if (cleanQuery.length < 2 || ['this', 'that', 'it', 'one'].includes(cleanQuery.toLowerCase())) {
-                // Use conversation history for context
-                const lastProductMention = recentHistory.find((msg: { role: string; content: string }) =>
-                    msg.role === 'user' && (msg.content.includes('product') || msg.content.includes('item'))
-                );
-                if (lastProductMention) {
-                    cleanQuery = lastProductMention.content;
-                    console.log(`[Agent] Enhanced query with conversation context: "${cleanQuery}"`);
-                }
-            }
-
-            console.log(`[Agent] Intent: ${intentResult.queryType}, Clean query: "${cleanQuery}"`);
-
-            console.log(`[Agent] Detected search intent. Raw: "${args.userMessage}", Clean: "${cleanQuery}"`);
-
-            let products: any[] = [];
-
-            // 1. Try Salla Live Search (with Retry Strategy)
-            try {
-                // Helper function to search with fallback
-                const searchSalla = async (query: string) => {
-                    console.log(`[Agent] Searching Salla for: "${query}"`);
-                    const result = await ctx.runAction(api.salla.fetchProducts, {
-                        userId: userId, // Use userId from chat
-                        keyword: query,
-                        perPage: 5
-                    });
-                    return result;
-                };
-
-                // Attempt 1: Full Clean Query
-                let sallaResult = await searchSalla(cleanQuery);
-
-                // Attempt 2: If no results and query has multiple words, try first 2 words (likely the main product name)
-                if ((!sallaResult.products || sallaResult.products.length === 0) && cleanQuery.split(" ").length > 2) {
-                    const simplifiedQuery = cleanQuery.split(" ").slice(0, 2).join(" ");
-                    console.log(`[Agent] No results for full query. Retrying with simplified: "${simplifiedQuery}"`);
-                    sallaResult = await searchSalla(simplifiedQuery);
-                }
-
-                if (sallaResult.connected) {
-                    if (sallaResult.products && sallaResult.products.length > 0) {
-                        console.log(`[Agent] Found ${sallaResult.products.length} products via Salla API`);
-                        products = sallaResult.products;
-                    } else {
-                        console.log(`[Agent] Salla search returned 0 products after retries.`);
-                    }
-                } else {
-                    console.log(`[Agent] Salla integration not connected.`);
-                }
-            } catch (e) {
-                console.warn("[Agent] Salla Live Search failed, checking local DB...", e);
-            }
-
-            // 2. Fallback to Local DB if Salla didn't return anything
-            if (products.length === 0) {
-                console.log(`[Agent] Fallback to Local DB search for: "${cleanQuery}"`);
-                products = await ctx.runQuery(api.products.list, {
-                    userId: userId, // Use userId from chat
-                    search: cleanQuery
-                });
-                console.log(`[Agent] Found ${products.length} products via Local DB`);
-            }
-
-            if (products && products.length > 0) {
-                // Update conversation context with successful search
-                updateConversationContext(args.contactPhone || 'anonymous', {
-                    query: cleanQuery,
-                    intent: intentResult.queryType,
-                    results: products.length
-                });
-
-                // Enhanced Product Context with query-type specific formatting
-                const productContextList = products.map((p: any) => ({
-                    id: p._id || p.id,
-                    name: p.name,
-                    price: `${p.price} ${p.currency}`,
-                    description: p.description || "No description",
-                    image: p.images?.[0]?.url || p.images?.[0] || p.image || p.imageUrl || null,
-                    url: p.url || p.urls?.customer || null, // Salla product URL
-                    stock: p.stock_status || p.availability || 'unknown',
-                    sku: p.sku || p.code || null
-                })).slice(0, 5); // Limit to 5
-
-                // Contextual response based on query type
-                let contextHeader = "";
-                let responseTone = "";
-                let productSelectionLogic = "";
-
-                switch (intentResult.queryType) {
-                    case 'price_inquiry':
-                        contextHeader = "[SYSTEM: User asked about pricing. Focus on price information and value proposition.]";
-                        responseTone = "Provide clear pricing information and mention any discounts or special offers.";
-                        // For price inquiries, prioritize the most relevant/affordable option
-                        productContextList.sort((a, b) => {
-                            const priceA = parseFloat(a.price.replace(/[^0-9.]/g, ''));
-                            const priceB = parseFloat(b.price.replace(/[^0-9.]/g, ''));
-                            return priceA - priceB;
-                        });
-                        break;
-
-                    case 'availability':
-                        contextHeader = "[SYSTEM: User asked about availability. Confirm stock status clearly.]";
-                        responseTone = "Be definitive about availability. If out of stock, offer alternatives or restocking information.";
-                        // For availability, show in-stock items first
-                        productContextList.sort((a: any, b: any) => {
-                            const stockOrder: { [key: string]: number } = {
-                                'in_stock': 1,
-                                'available': 1,
-                                'limited': 2,
-                                'out_of_stock': 3,
-                                'unknown': 2
-                            };
-                            return (stockOrder[a.stock] || 2) - (stockOrder[b.stock] || 2);
-                        });
-                        break;
-
-                    case 'product_number':
-                        contextHeader = "[SYSTEM: User provided specific product number/SKU. Be precise about exact matches.]";
-                        responseTone = "Acknowledge the specific product identifier and confirm if it's an exact match.";
-                        // For product numbers, prioritize exact SKU matches
-                        if (intentResult.extractedParams.productNumber) {
-                            const exactMatch = productContextList.find(p =>
-                                p.sku?.toUpperCase() === intentResult.extractedParams.productNumber ||
-                                p.name.toUpperCase().includes(intentResult.extractedParams.productNumber)
-                            );
-                            if (exactMatch) {
-                                productContextList.unshift(exactMatch);
-                                productContextList.splice(1, 0, ...productContextList.filter(p => p !== exactMatch));
-                            }
-                        }
-                        break;
-
-                    case 'category_search':
-                        contextHeader = "[SYSTEM: User asked about product categories. Show variety within the category.]";
-                        responseTone = "Show range of options in the requested category, from different price points and styles.";
-                        break;
-
-                    case 'comparison':
-                        contextHeader = "[SYSTEM: User wants to compare products. Highlight differences in features and pricing.]";
-                        responseTone = "Present options side-by-side, emphasizing key differences in features, price, and value.";
-                        break;
-
-                    default:
-                        contextHeader = "[SYSTEM: General product search. Show most relevant results.]";
-                        responseTone = "Be helpful and conversational while presenting the best matching products.";
-                }
-
-                let productsText = "";
-                productContextList.forEach((p: any, index: number) => {
-                    const stockIndicator = p.stock === 'in_stock' || p.stock === 'available' ? '✅ In Stock' :
-                        p.stock === 'out_of_stock' ? '❌ Out of Stock' :
-                            p.stock === 'limited' ? '⚠️ Limited Stock' : '🤔 Check Availability';
-
-                    productsText += `
-Product ${index + 1}:
-Name: ${p.name}
-Price: ${p.price} ${stockIndicator}`;
-
-                    // Add SKU if available and it was a product number search
-                    if (p.sku && intentResult.queryType === 'product_number') {
-                        productsText += `
-SKU: ${p.sku}`;
-                    }
-
-                    productsText += `
-Description: ${p.description.substring(0, 150)}...
--------------------`;
-                });
-
-                // Select primary product based on query context
-                const primaryProduct = productContextList[0];
-                const toolPayload = {
-                    name: primaryProduct.name,
-                    price: primaryProduct.price,
-                    imageUrl: primaryProduct.image,
-                    productUrl: primaryProduct.url || "N/A",
-                    description: primaryProduct.description.substring(0, 150).replace(/<[^>]*>/g, "") + "..."
-                };
-                selectedProduct = toolPayload;
-
-                // Get contextual suggestions based on conversation history
-                const contextualSuggestions = getContextualResponse(args.contactPhone || 'anonymous', intentResult, products.length);
-
-                const productsContext = `
-            ${contextHeader}
-            [SYSTEM: I have searched the store and found these products matching the user's ${intentResult.queryType} query:]
-            ${productsText}
-            
-            [INSTRUCTION: ${responseTone} Write a contextual response that addresses their specific query type (${intentResult.queryType}). Use the tool tag for the most relevant product. Do NOT include any image URL in your text. Only include the product link in the formatted text. The image must be sent as WhatsApp media using its URL internally. The tool tag will not be shown to the user.]
-            
-            Based on your ${intentResult.queryType.replace('_', ' ')} request, here's what I found:
-            <TOOL:send_product>
-            ${JSON.stringify(toolPayload)}
-            </TOOL:send_product>
-            ${contextualSuggestions}
-            `;
-
-                // Inject context into the last user message
-                messages[messages.length - 1].content += productsContext;
-            } else {
-                // Enhanced no-results handling with contextual suggestions
-                let noResultsMessage = `\n\n[SYSTEM: I searched the store for "${cleanQuery}" but found NO products. `;
-
-                // Provide contextual suggestions based on query type
-                switch (intentResult.queryType) {
-                    case 'product_number':
-                        noResultsMessage += `The product number/SKU "${intentResult.extractedParams.productNumber}" was not found. `;
-                        noResultsMessage += `Please double-check the number or try searching by product name.]`;
-                        break;
-                    case 'price_inquiry':
-                        noResultsMessage += `I couldn't find pricing for "${intentResult.extractedParams.productName}". `;
-                        noResultsMessage += `Try searching with a different product name or browse our available categories.]`;
-                        break;
-                    case 'availability':
-                        noResultsMessage += `I couldn't find availability information for your query. `;
-                        noResultsMessage += `You can browse our catalog or contact support for specific product availability.]`;
-                        break;
-                    default:
-                        noResultsMessage += `Try using different keywords, check spelling, or browse by category. `;
-                        noResultsMessage += `You can also ask me about specific product types or brands.]`;
-                }
-
-                messages[messages.length - 1].content += noResultsMessage;
-            }
-        }
-
-        try {
-            const response = await fetch(OPENROUTER_API_URL, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://w-ai.com",
-                    "X-Title": "W-AI Agent",
-                },
-                body: JSON.stringify({
-                    model: model,
-                    messages: messages,
-                })
-            });
-
-            if (!response.ok) {
-                const err = await response.text();
-                console.error("[Agent] OpenRouter Error:", err);
-                return;
-            }
-
-            const data = await response.json();
-            let aiText = data.choices?.[0]?.message?.content || "Sorry, I couldn't generate a response.";
-
-            console.log(`[Agent] Response: ${aiText.substring(0, 50)}...`);
-
-            const toolRegex = /<TOOL:send_product>\s*(?:```json\s*)?({[\s\S]*?})(?:\s*```)?/i;
-            const toolMatch = aiText.match(toolRegex);
-            let sentByTool = false;
-            if (toolMatch) {
-                const jsonText = toolMatch[1];
-                let payload: Record<string, unknown> | null = null;
-                try {
-                    payload = JSON.parse(jsonText);
-                } catch { }
-                aiText = aiText.replace(toolMatch[0], "").trim();
-                if (payload && typeof payload.name === "string" && typeof payload.price === "string") {
-                    await ctx.runAction(internal.agent.messengerProduct, {
-                        organizationId: args.organizationId, // Organization-scoped
-                        chatId: args.chatId,
-                        contactPhone: args.contactPhone,
-                        name: payload.name as string,
-                        price: payload.price as string,
-                        imageUrl: (payload.imageUrl as string) || "",
-                        productUrl: (payload.productUrl as string) || "",
-                        description: (payload.description as string) || ""
-                    });
-                    sentByTool = true;
-                    if (aiText) {
-                        await ctx.runMutation(internal.messages.sendAndSave, {
-                            organizationId: args.organizationId, // Organization-scoped
-                            chatId: args.chatId,
-                            content: aiText,
-                            type: "text",
-                            contactPhone: args.contactPhone
-                        });
-                    }
-                } else {
-                    await ctx.runMutation(internal.messages.sendAndSave, {
-                        organizationId: args.organizationId, // Organization-scoped
-                        chatId: args.chatId,
-                        content: cleanText(aiText),
-                        type: "text",
-                        contactPhone: args.contactPhone
-                    });
-                }
-            } else {
-                // Parse generic tool tags: send_text, send_image, send_link
-                const genericTools: Array<{ type: "text" | "image" | "link" | "audio"; pattern: RegExp }> = [
-                    { type: "text", pattern: /<TOOL:send_text>\s*(?:```(?:json|text)\s*)?({[\s\S]*?}|[\s\S]*?)(?:\s*```)?/i },
-                    { type: "image", pattern: /<TOOL:send_image>\s*(?:```json\s*)?({[\s\S]*?})(?:\s*```)?/i },
-                    { type: "link", pattern: /<TOOL:send_link>\s*(?:```json\s*)?({[\s\S]*?})(?:\s*```)?/i },
-                    { type: "audio", pattern: /<TOOL:send_audio>\s*(?:```json\s*)?({[\s\S]*?})(?:\s*```)?/i }
-                ];
-                for (const entry of genericTools) {
-                    const m = aiText.match(entry.pattern);
-                    if (!m) continue;
-                    const raw = m[1];
-                    aiText = aiText.replace(m[0], "").trim();
-                    let payload: any = raw;
-                    try {
-                        payload = JSON.parse(raw);
-                    } catch {
-                        if (entry.type === "text") {
-                            payload = { text: String(raw).trim() };
-                        }
-                    }
-                    await ctx.runAction(internal.agent.executeTool, {
-                        organizationId: args.organizationId, // Organization-scoped
-                        chatId: args.chatId,
-                        contactPhone: args.contactPhone,
-                        tool: entry.type,
-                        payload
-                    });
-                    sentByTool = true;
-                }
-                const imageTagRegex = /<SEND_IMAGE:(.*?):(.*?)(?:>|$)/;
-                const match = aiText.match(imageTagRegex);
-                let sentByImageTag = false;
-
-                if (match) {
-                    const imageUrl = match[1];
-                    const caption = match[2] || "";
-
-                    // Clean the tag from the text sent to user
-                    aiText = aiText.replace(match[0], "").trim();
-
-                    // Send Text First (if any left)
-                    if (aiText) {
-                        await ctx.runMutation(internal.messages.sendAndSave, {
-                            organizationId: args.organizationId, // Organization-scoped
-                            chatId: args.chatId,
-                            content: cleanText(aiText),
-                            type: "text",
-                            contactPhone: args.contactPhone
-                        });
-                    }
-
-                    // Send Image
-                    if (imageUrl && imageUrl !== "null") {
-                        await ctx.runMutation(internal.messages.sendAndSave, {
-                            organizationId: args.organizationId, // Organization-scoped
-                            chatId: args.chatId,
-                            contactPhone: args.contactPhone,
-                            content: caption,
-                            type: "image",
-                            mediaUrl: imageUrl
-                        });
-                        sentByImageTag = true;
-                    }
-                } else {
-                    // Normal Text Response
-                    await ctx.runMutation(internal.messages.sendAndSave, {
-                        organizationId: args.organizationId, // Organization-scoped
-                        chatId: args.chatId,
-                        content: cleanText(aiText),
-                        type: "text",
-                        contactPhone: args.contactPhone
-                    });
-                }
-                // Fallback: Arabic/English "send product" directive, or automatic send if we have selectedProduct
-                const arabicSendRegex = /\[?أرسل المنتج\]?/;
-                const englishSendRegex = /\[?send product\]?/i;
-                if ((arabicSendRegex.test(aiText) || englishSendRegex.test(aiText)) && selectedProduct) {
-                    aiText = aiText.replace(arabicSendRegex, "").replace(englishSendRegex, "").trim();
-                }
-                if (!sentByTool && !sentByImageTag && selectedProduct) {
-                    await ctx.runAction(internal.agent.messengerProduct, {
-                        organizationId: args.organizationId, // Organization-scoped
-                        chatId: args.chatId,
-                        contactPhone: args.contactPhone,
-                        name: selectedProduct.name,
-                        price: selectedProduct.price,
-                        imageUrl: selectedProduct.imageUrl || "",
-                        productUrl: selectedProduct.productUrl || "",
-                        description: selectedProduct.description || ""
-                    });
-                    if (aiText) {
-                        await ctx.runMutation(internal.messages.sendAndSave, {
-                            organizationId: args.organizationId, // Organization-scoped
-                            chatId: args.chatId,
-                            content: cleanText(aiText),
-                            type: "text",
-                            contactPhone: args.contactPhone
-                        });
-                    }
-                }
-            }
-
-            // 6. Trigger Summary Update (Async)
-            // We do this AFTER sending response to user to avoid latency
-            await ctx.scheduler.runAfter(0, internal.agent.updateSummary, {
-                chatId: args.chatId,
-                existingSummary: chat?.aiSummary || "",
-                newMessages: [
-                    { role: "user", content: args.userMessage },
-                    { role: "assistant", content: aiText }
-                ],
-                model: model
-            });
-
-        } catch (error) {
-            console.error("[Agent] Execution Failed:", error);
-        }
-    },
-});
-
-export const updateSummary = internalAction({
-    args: {
-        chatId: v.id("chats"),
-        existingSummary: v.string(),
-        newMessages: v.array(v.object({ role: v.string(), content: v.string() })),
-        model: v.string()
-    },
-    handler: async (ctx, args) => {
-        const apiKey = process.env.OPENROUTER_KEY;
-        if (!apiKey) return;
-
-        const summaryPrompt = `
-        You are a memory manager for an AI assistant.
-        Your goal is to update the conversation summary with new interactions.
-        
-        EXISTING SUMMARY:
-        "${args.existingSummary || "No previous summary."}"
-        
-        NEW INTERACTION:
-        User: ${args.newMessages[0].content}
-        Assistant: ${args.newMessages[1].content}
-        
-        INSTRUCTIONS:
-        1. Condense the new interaction into the existing summary.
-        2. Keep important details (User's name, preferences, products asked for, what was agreed).
-        3. Remove old irrelevant details if the summary gets too long (keep it under 500 characters).
-        4. Output ONLY the new summary text.
-        `;
-
-        try {
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://w-ai.com",
-                    "X-Title": "W-AI Summary Agent",
-                },
-                body: JSON.stringify({
-                    model: "arcee-ai/trinity-mini:free", // Use small fast model for summary
-                    messages: [{ role: "user", content: summaryPrompt }],
-                })
-            });
-
-            if (!response.ok) return;
-
-            const data = await response.json();
-            const newSummary = data.choices?.[0]?.message?.content || args.existingSummary;
-
-            // Update Chat
-            await ctx.runMutation(internal.agent.saveSummary, {
-                chatId: args.chatId,
-                summary: newSummary
-            });
-
-        } catch (e) {
-            console.error("[Agent] Summary Update Failed:", e);
-        }
-    }
-});
-
-export const saveSummary = internalMutation({
-    args: { chatId: v.id("chats"), summary: v.string() },
-    handler: async (ctx, args) => {
-        await ctx.db.patch(args.chatId, { aiSummary: args.summary });
-    }
-});
-
-export const sendProduct = internalAction({
-    args: {
-        organizationId: v.id("organizations"), // Organization-scoped
-        chatId: v.id("chats"),
-        contactPhone: v.string(),
-        name: v.string(),
-        price: v.string(),
-        imageUrl: v.string(),
-        productUrl: v.string(),
-        description: v.string()
-    },
-    handler: async (ctx, args) => {
-        // Verify chat belongs to organization
-        const chat = await ctx.runQuery(internal.chat.getChatById, {
-            organizationId: args.organizationId,
-            chatId: args.chatId,
-        });
-        if (!chat || chat.organizationId !== args.organizationId) {
-            throw new Error("Chat not found or access denied");
-        }
-
-        const desc = args.description.replace(/<[^>]*>/g, "");
-        const text = `*${args.name}*\n💰 *Price:* ${args.price}\n\n${desc}\n\n🔗 *Link:* ${args.productUrl || "N/A"}`;
-        await ctx.runMutation(internal.messages.sendAndSave, {
-            organizationId: args.organizationId, // Organization-scoped
-            chatId: args.chatId,
-            content: text,
-            type: "text",
-            contactPhone: args.contactPhone
-        });
-        if (args.imageUrl && args.imageUrl !== "null") {
-            await ctx.runMutation(internal.messages.sendAndSave, {
-                organizationId: args.organizationId, // Organization-scoped
-                chatId: args.chatId,
-                contactPhone: args.contactPhone,
-                content: `${args.name} - ${args.price}`,
-                type: "image",
-                mediaUrl: args.imageUrl
-            });
-        }
-    }
-});
-
-export const messengerProduct = internalAction({
-    args: {
-        organizationId: v.id("organizations"), // Organization-scoped
-        chatId: v.id("chats"),
-        contactPhone: v.string(),
-        name: v.string(),
-        price: v.string(),
-        imageUrl: v.string(),
-        productUrl: v.string(),
-        description: v.string()
-    },
-    handler: async (ctx, args) => {
-        const text = `*${args.name}*\n💰 *Price:* ${args.price}\n\n${args.description.replace(/<[^>]*>/g, "")}\n\n🔗 *Link:* ${args.productUrl || "N/A"}`;
-        await ctx.runAction(internal.agent.executeTool, {
-            organizationId: args.organizationId, // Organization-scoped
-            chatId: args.chatId,
-            contactPhone: args.contactPhone,
-            tool: "text",
-            payload: { text }
-        });
-        if (args.imageUrl && args.imageUrl !== "null") {
-            await ctx.runAction(internal.agent.executeTool, {
-                organizationId: args.organizationId, // Organization-scoped
-                chatId: args.chatId,
-                contactPhone: args.contactPhone,
-                tool: "image",
-                payload: { imageUrl: args.imageUrl, caption: `${args.name} - ${args.price}` }
-            });
-        }
-    }
-});
-
-export const executeTool = internalAction({
-    args: {
-        organizationId: v.id("organizations"), // Organization-scoped
-        chatId: v.id("chats"),
-        contactPhone: v.string(),
-        tool: v.union(v.literal("text"), v.literal("image"), v.literal("link"), v.literal("audio")),
-        payload: v.any()
-    },
-    handler: async (ctx, args) => {
-        if (args.tool === "text") {
-            const text = typeof args.payload?.text === "string" ? args.payload.text : String(args.payload || "").trim();
-            if (text) {
-                await ctx.runMutation(internal.messages.sendAndSave, {
-                    organizationId: args.organizationId, // Organization-scoped
-                    chatId: args.chatId,
-                    content: text,
-                    type: "text",
-                    contactPhone: args.contactPhone
-                });
-            }
-            return;
-        }
-        if (args.tool === "image") {
-            const link = String(args.payload?.imageUrl || args.payload?.link || "");
-            const caption = String(args.payload?.caption || "");
-            if (link) {
-                await ctx.runMutation(internal.messages.sendAndSave, {
-                    organizationId: args.organizationId, // Organization-scoped
-                    chatId: args.chatId,
-                    contactPhone: args.contactPhone,
-                    content: caption,
-                    type: "image",
-                    mediaUrl: link
-                });
-            }
-            return;
-        }
-        if (args.tool === "link") {
-            const url = String(args.payload?.url || args.payload);
-            if (url) {
-                const text = `🔗 *Link:* ${url}`;
-                await ctx.runMutation(internal.messages.sendAndSave, {
-                    organizationId: args.organizationId, // Organization-scoped
-                    chatId: args.chatId,
-                    content: text,
-                    type: "text",
-                    contactPhone: args.contactPhone
-                });
-            }
-            return;
-        }
-        if (args.tool === "audio") {
-            const link = String(args.payload?.audioUrl || args.payload?.link || "");
-            if (link) {
-                await ctx.runMutation(internal.messages.sendAndSave, {
-                    organizationId: args.organizationId, // Organization-scoped
-                    chatId: args.chatId,
-                    contactPhone: args.contactPhone,
-                    content: "",
-                    type: "audio",
-                    mediaUrl: link
-                });
-            }
-            return;
         }
     }
 });

@@ -26,6 +26,14 @@ export const getChatByPhone = internalQuery({
   },
 });
 
+export const get = internalQuery({
+  args: { id: v.id("chats") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+
 // Public query to check for chat existence
 export const getContactChat = query({
   args: {

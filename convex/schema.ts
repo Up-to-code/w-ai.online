@@ -103,6 +103,7 @@ export default defineSchema({
     model: v.string(),
     temperature: v.optional(v.number()),
     tools: v.optional(v.array(v.string())), // e.g., ["salla", "handoff", "media"]
+    languageRules: v.optional(v.string()), // User-editable language instructions for AI
     activePhoneNumbers: v.optional(v.array(v.string())), // Array of phoneNumberIds
     isActive: v.boolean(),
     updatedAt: v.number(),
@@ -162,19 +163,29 @@ export default defineSchema({
   products: defineTable({
     userId: v.optional(v.id("users")), // Backward compatibility
     organizationId: v.optional(v.id("organizations")), // Multi-tenant: organization that owns this product
-    externalId: v.string(), // SOLO ID
+    externalId: v.string(), // SOLO ID or Native SKU
     name: v.string(),
     price: v.number(),
     currency: v.string(),
     imageUrl: v.optional(v.string()),
     description: v.optional(v.string()),
     inStock: v.boolean(),
+    // Enhanced fields for Phase 33 - Native Product Management
+    sku: v.string(),
+    quantity: v.number(),
+    images: v.optional(v.array(v.string())),
+    variants: v.optional(v.any()), // JSON: {size, color, price_diffs}
+    status: v.union(v.literal("active"), v.literal("draft")),
+    source: v.union(v.literal("native"), v.literal("salla")), // Track data source
+    sourceId: v.optional(v.string()), // Salla externalId or native ID reference
   }).index("by_external_id", ["externalId"])
     .index("by_user_external_id", ["userId", "externalId"])
     .index("by_org_external_id", ["organizationId", "externalId"])
+    .index("by_org_status", ["organizationId", "status"])
+    .index("by_org_sku", ["organizationId", "sku"])
     .searchIndex("search_products", {
       searchField: "name",
-      filterFields: ["inStock", "userId", "organizationId"]
+      filterFields: ["inStock", "userId", "organizationId", "status"]
     }),
 
   knowledge_base: defineTable({
@@ -493,4 +504,36 @@ export default defineSchema({
     activatedBy: v.id("users"),
   }).index("by_org", ["organizationId"])
     .index("by_org_tool", ["organizationId", "toolId"]),
+
+  // Credits System
+  credits: defineTable({
+    organizationId: v.id("organizations"),
+    balance: v.number(), // In USD cents (e.g., 1000 = $10.00)
+    updatedAt: v.number(),
+  }).index("by_org", ["organizationId"]),
+
+  credit_transactions: defineTable({
+    organizationId: v.id("organizations"),
+    type: v.union(v.literal("purchase"), v.literal("usage"), v.literal("refund")),
+    amount: v.number(), // Positive for purchase, negative for usage
+    description: v.string(),
+    modelUsed: v.optional(v.string()),
+    tokensInput: v.optional(v.number()),
+    tokensOutput: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_org", ["organizationId"])
+    .index("by_org_created", ["organizationId", "createdAt"]),
+
+  // App Store / Integration Management - Phase 33
+  installed_apps: defineTable({
+    organizationId: v.id("organizations"),
+    appId: v.string(), // e.g., "google_search", "salla", "knowledge_base"
+    config: v.optional(v.any()), // API keys, webhooks, custom settings
+    isActive: v.boolean(),
+    category: v.union(v.literal("channels"), v.literal("intelligence"), v.literal("utilities"), v.literal("marketing")),
+    installedAt: v.number(),
+    installedBy: v.id("users"),
+    aiEnabled: v.boolean(), // Can AI agent use this app?
+  }).index("by_org", ["organizationId"])
+    .index("by_org_app", ["organizationId", "appId"]),
 });
